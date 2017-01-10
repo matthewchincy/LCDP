@@ -11,11 +11,15 @@ public:
 	~BackgroundSubtractorLCDP();
 
 	struct descriptor {
-
 		int frameCount;
 		int p;
 		int q;
 		std::vector<int> LCDP;
 	};
+	
+	// Parameters and Model initialize
+	void Initialize();
+	// Descriptor Generator
+	void DescriptorGenerator();
 };
 #endif

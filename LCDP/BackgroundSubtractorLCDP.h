@@ -1,12 +1,21 @@
 #pragma once
-#include <iostream>
+#include <vector>
 #ifndef __BackgroundSubtractorLCDP_H_INCLUDED
 #define __BackgroundSubtractorLCDP_H_INCLUDED
 class BackgroundSubtractorLCDP {
-	void calculateTest(std::int a, std::int b) {
+public:
+	// Constructer
+	BackgroundSubtractorLCDP();
 
-}
+	// Destructer
+	~BackgroundSubtractorLCDP();
 
+	struct descriptor {
 
+		int frameCount;
+		int p;
+		int q;
+		std::vector<int> LCDP;
+	};
 };
 #endif

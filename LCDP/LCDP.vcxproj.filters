@@ -26,5 +26,8 @@
     <ClInclude Include="BackgroundSubtractorLCDP.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="RandUtils.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

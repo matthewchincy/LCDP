@@ -5,11 +5,19 @@
 
 int main() {
 
-	std::string filename = "../../fall.avi";
+	//std::string filename = "../../fall.avi";
+	std::string filename = "C:/Users/mattc/Desktop/Background Subtraction/Results/fall/fall.avi";
 	cv::VideoCapture videoCapture;
 	videoCapture.open(filename);
+	// Input frame
+	cv::Mat inputFrame;
+	// FG Mask
+	cv::Mat fgMask;
+	videoCapture >> inputFrame;
+	videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
+
 	// Checking video whether successful be opened
-	if (!videoCapture.isOpened()) {
+	if (!videoCapture.isOpened() || inputFrame.empty()) {
 		std::cout << "Video having problem. Cannot open the video file." << std::endl;
 		return -1;
 	}
@@ -20,12 +28,11 @@ int main() {
 	int FRAME_WIDTH = videoCapture.get(cv::CAP_PROP_FRAME_WIDTH);
 	// Display windows
 	cv::namedWindow("Input Video");
-
+	size_t maxWordsNo = 50;
 	// Background Subtractor Initialize
-	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_HEIGHT,FRAME_WIDTH);
-
-	// Input frame
-	cv::Mat inputFrame;
+	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_HEIGHT,FRAME_WIDTH, maxWordsNo);
+	backgroundSubtractorLCDP.Initialize(inputFrame,inputFrame);
+	
 	for (int frameIndex = 1;frameIndex <= FRAME_COUNT;frameIndex++) {
 		bool inputCheck = videoCapture.read(inputFrame);
 		if (!inputCheck) {
@@ -33,8 +40,9 @@ int main() {
 		}
 
 
-
+		backgroundSubtractorLCDP.Process(inputFrame, fgMask);
 		cv::imshow("Input Video", inputFrame);
+		cv::imshow("Results", fgMask);
 		// If 'esc' key is pressed, break loop
 		if (cv::waitKey(1) == 27)
 		{

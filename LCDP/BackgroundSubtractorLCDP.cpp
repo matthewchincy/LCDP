@@ -46,7 +46,7 @@ void BackgroundSubtractorLCDP::Initialize(cv::Mat img_input, cv::Mat roi_input)
 
 	// PRE-PROCESS Parameters
 	// Size of gaussian filter
-	methodParam.preProcess.gaussianSize = 5;
+	methodParam.preProcess.gaussianSize = cv::Size(5,5);
 
 	// GENERATE DESCRIPTOR Parameters
 	// LCDP Parameters
@@ -210,17 +210,16 @@ void BackgroundSubtractorLCDP::Initialize(cv::Mat img_input, cv::Mat roi_input)
 	size_t nPxIter = 0;
 	size_t nModelIter = 0;
 	for (size_t rowIndex = 0;rowIndex < methodParam.frame.initFrameSize.height;rowIndex++) {
-		for (size_t colIndex = 0;colIndex < methodParam.frame.initFrameSize.width;colIndex++) {
-			++nPxIter;
-			pxInfoLUT[nModelIter] = nPxIter;
+		for (size_t colIndex = 0;colIndex < methodParam.frame.initFrameSize.width;colIndex++) {			
 			pxInfoLUT[nPxIter].imgCoord_Y = (int)nPxIter / methodParam.frame.initFrameSize.width;
 			pxInfoLUT[nPxIter].imgCoord_X = (int)nPxIter%methodParam.frame.initFrameSize.width;
 			pxInfoLUT[nPxIter].nModelIdx = nModelIter;
 			const size_t nPxRGBIter = nPxIter * 3;
 			const size_t nDescRGBIter = nPxRGBIter * 2;
 			Descriptor tempWord = *lastWordListIter++;
-			DescriptorGenerator(img_input.at<cv::Vec3d>(rowIndex, colIndex), tempWord);
+			DescriptorGenerator(img_input,cv::Point2d(colIndex, rowIndex), tempWord);
 			++nModelIter;
+			nPxIter++;			
 		}
 	}
 
@@ -242,20 +241,13 @@ void BackgroundSubtractorLCDP::RefreshModel(float refreshFraction, bool forceFGU
 	}
 }
 
-void BackgroundSubtractorLCDP::DescriptorGenerator(cv::Vec3d pixelInput, Descriptor &tempWord)
-{
-	tempWord.frameCount = 1;
-	tempWord.rgb = pixelInput;
-	tempWord.p = frameIndex;
-	tempWord.q = frameIndex;
-	tempWord.LCDP = 
-
-}
-
-
 
 void BackgroundSubtractorLCDP::Process(const cv::Mat & img_input, cv::Mat & img_output)
 {
+	// PRE PROCESSING
+	cv::GaussianBlur(img_input, img_input, methodParam.preProcess.gaussianSize, 0, 0);
+
+
 
 
 	// POST PROCESSING
@@ -267,7 +259,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat & img_input, cv::Mat & img_
 	cv::Mat borderLineReconstructResult = BorderLineReconst();
 	cv::Mat compensationResult = CompensationMotionHist();
 	cv::bitwise_or(result.currFGMask, borderLineReconstructResult, result.currFGMask);
-	cv::morphologyEx(result.currFGMask, result., cv::MORPH_CLOSE, cv::Mat());
+	//cv::morphologyEx(result.currFGMask, result., cv::MORPH_CLOSE, cv::Mat());
 	result.FGMaskPreFlood.copyTo(result.FGMaskFloodedHoles);
 	cv::floodFill(result.FGMaskFloodedHoles, cv::Point(0, 0), UCHAR_MAX);
 	cv::bitwise_not(result.FGMaskFloodedHoles, result.FGMaskFloodedHoles);
@@ -306,11 +298,140 @@ cv::Mat BackgroundSubtractorLCDP::CompensationMotionHist() {
 	return compensationResult;
 }
 
+std::vector<std::vector<int>> BackgroundSubtractorLCDP::LCDGenerator(cv::Mat inputFrame, cv::Point2d coor)
+{
+	size_t nbNo = methodParam.descriptor.LCDP.nbNo;
+	int maxHeight = methodParam.frame.initFrameSize.height - 1;
+	int maxWidth = methodParam.frame.initFrameSize.width - 1;
+	std::vector<std::vector<int>> result(nbNo);
+	cv::Point2d offset[16];
+	offset[0] = cv::Point2d(-1, -1);
+	offset[1] = cv::Point2d(0, -1);
+	offset[2] = cv::Point2d(1, -1);
+	offset[3] = cv::Point2d(-1, 0);
+	offset[4] = cv::Point2d(1, 0);
+	offset[5] = cv::Point2d(-1, 1);
+	offset[6] = cv::Point2d(0, 1);
+	offset[7] = cv::Point2d(1, 1);
+	offset[8] = cv::Point2d(-2, -2);
+	offset[9] = cv::Point2d(0, -2);
+	offset[10] = cv::Point2d(2, -2);
+	offset[11] = cv::Point2d(-2, 0);
+	offset[12] = cv::Point2d(2, 0);
+	offset[13] = cv::Point2d(-2, 2);
+	offset[14] = cv::Point2d(0, 2);
+	offset[15] = cv::Point2d(2, 2);
+	cv::Vec3b currPixel = inputFrame.at<cv::Vec3b>(coor.y, coor.x);
+	for (int pixelIndex = 0;pixelIndex < nbNo;pixelIndex++) {
+		cv::Point2d nbPixelCoor(std::min(maxWidth,std::max(0,int(coor.x + offset[pixelIndex].x))), std::min(maxHeight, std::max(0, int(coor.y + offset[pixelIndex].y))));
+		cv::Vec3b nbPixel = inputFrame.at<cv::Vec3b>(nbPixelCoor.y, nbPixelCoor.x);
+		std::vector<int> tempRes;
+		// R-G
+		tempRes.push_back(nbPixel[2] - currPixel[1]);
+		// R-B
+		tempRes.push_back(nbPixel[2] - currPixel[0]);
+		// G-R
+		tempRes.push_back(nbPixel[1] - currPixel[2]);
+		// G-B
+		tempRes.push_back(nbPixel[1] - currPixel[0]);
+		// B-R
+		tempRes.push_back(nbPixel[0] - currPixel[2]);
+		// B-G
+		tempRes.push_back(nbPixel[0] - currPixel[1]);
+		// R-R
+		tempRes.push_back(nbPixel[2] - currPixel[2]);
+		// G-G
+		tempRes.push_back(nbPixel[1] - currPixel[1]);
+		// B-B
+		tempRes.push_back(nbPixel[0] - currPixel[0]);
+		result.at(pixelIndex) = tempRes;
+	}
+
+	return result;
+}
+
+
+
+void BackgroundSubtractorLCDP::DescriptorGenerator(cv::Mat inputFrame, cv::Point2d coor, Descriptor & tempWord)
+{
+	tempWord.frameCount = 1;
+	tempWord.rgb = inputFrame.at<cv::Vec3b>(coor.y,coor.x);
+	tempWord.p = frameIndex;
+	tempWord.q = frameIndex;
+	tempWord.LCDP = LCDGenerator(inputFrame,coor);
+}
+
 // Border line reconstruct
 cv::Mat BackgroundSubtractorLCDP::BorderLineReconst()
 {
 	cv::Mat reconstructResult;
 	reconstructResult.create(methodParam.frame.initFrameSize, CV_8UC1);
 	reconstructResult = cv::Scalar_<uchar>(0);
+	size_t height = methodParam.frame.initFrameSize.height-1;
+	size_t width = methodParam.frame.initFrameSize.width-1;
+	size_t startIndexList_Y[4] = { 0,0,0,height };
+	size_t endIndexList_Y[4] = { 0,height,height,height };
+	size_t startIndexList_X[4] = { 0,0,width,0 };
+	size_t endIndexList_X[4] = { width,0,width,width };
+	for (int line = 0;line < 4;line++) {
+		uchar previousIndex = 0;
+		size_t previousIndex_Y_start = startIndexList_Y[line];
+		size_t previousIndex_Y_end = startIndexList_Y[line];
+		size_t previousIndex_X_start = startIndexList_X[line];
+		size_t previousIndex_X_end = startIndexList_X[line];
+		bool previous = false;
+		bool completeLine = false;
+		for (int rowIndex = startIndexList_Y[line];startIndexList_Y[line] <= endIndexList_Y[line];rowIndex++) {
+			for (int colIndex = startIndexList_Y[line];startIndexList_X[line] <= endIndexList_X[line];colIndex++) {
+				if ((result.currFGMask.at<uchar>(rowIndex, colIndex) != previousIndex)&& (result.currFGMask.at<uchar>(rowIndex, colIndex) == 255)) {
+					if (!previous) {
+						previous = true;
+						previousIndex = 255;
+						if (((previousIndex_Y_start < previousIndex_Y_end) || (previousIndex_X_start < previousIndex_X_end)) && completeLine) {
+							for (int recRowIndex = previousIndex_Y_start;previousIndex_Y_start <= previousIndex_Y_end;recRowIndex++) {
+								for (int recColIndex = previousIndex_X_start;previousIndex_X_start <= previousIndex_X_end;recColIndex++) {
+									reconstructResult.at<uchar>(recRowIndex, recColIndex) = 255;
+								}
+							}
+							previousIndex_Y_end = rowIndex;
+							previousIndex_X_end = colIndex;
+							completeLine = false;
+						}
+					}
+					previousIndex_Y_start = rowIndex;
+					previousIndex_X_start = colIndex;
+				}else if((result.currFGMask.at<uchar>(rowIndex, colIndex) != previousIndex) && (result.currFGMask.at<uchar>(rowIndex, colIndex) == 0)) {
+					if (previous) {
+						previous = false;
+						previousIndex = 0;
+						completeLine = true;
+					}
+					previousIndex_Y_end = rowIndex;
+					previousIndex_X_end = colIndex;
+				}
+				else if(result.currFGMask.at<uchar>(rowIndex, colIndex) == 255) {
+					if (previous) {
+						previousIndex_Y_start = rowIndex;
+						previousIndex_X_start = colIndex;
+					}
+				}
+				else if (result.currFGMask.at<uchar>(rowIndex, colIndex) == 0) {
+					if (!previous) {
+						size_t ybalance = previousIndex_Y_end - previousIndex_Y_start;
+						size_t xbalance = previousIndex_X_end - previousIndex_X_start;
+						if (ybalance > (methodParam.frame.initFrameSize.height / 2)) {
+							previousIndex_Y_start = rowIndex;
+							previousIndex_X_start = colIndex;
+						}else if (xbalance > (methodParam.frame.initFrameSize.width / 2)) {
+							previousIndex_Y_start = rowIndex;
+							previousIndex_X_start = colIndex;
+						}
+						previousIndex_Y_end = rowIndex;
+						previousIndex_X_end = colIndex;
+					}
+				}
+			}
+		}
+	}
 	return reconstructResult;
 }

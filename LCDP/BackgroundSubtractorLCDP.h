@@ -27,11 +27,11 @@ public:
 protected:
 
 	struct Descriptor {
-		cv::Vec3d rgb;
+		cv::Vec3b rgb;
 		int frameCount;
 		int p;
 		int q;
-		std::vector<int> LCDP;
+		std::vector<std::vector<int>> LCDP;
 	};
 
 
@@ -49,7 +49,7 @@ protected:
 	// PRE-PROCESS Parameters
 	struct PreProcess {
 		// Size of gaussian filter
-		size_t gaussianSize;
+		cv::Size gaussianSize;
 	};
 
 	// GENERATE DESCRIPTOR Parameters
@@ -215,10 +215,12 @@ protected:
 	// Internal pixel info LUT for all possible pixel indexes
 	PxInfoBase* pxInfoLUT;
 	// Descriptor Generator
-	void DescriptorGenerator(cv::Vec3d pixelInput, Descriptor &tempWord);
+	void DescriptorGenerator(cv::Mat inputFrame, cv::Point2d coor, Descriptor &tempWord);
 	// Border line reconstruct
 	cv::Mat BorderLineReconst();
 	// Compensation with Motion Hist
 	cv::Mat CompensationMotionHist();
+	// Local color difference generator
+	std::vector<std::vector<int>> LCDGenerator(cv::Mat inputFrame,cv::Point2d coor);
 };
 #endif

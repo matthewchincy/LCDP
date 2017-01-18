@@ -22,15 +22,17 @@ int main() {
 		return -1;
 	}
 	// Getting frames per second (FPS) of the input video
-	double FPS = videoCapture.get(cv::CAP_PROP_FPS);
-	double FRAME_COUNT = videoCapture.get(cv::CAP_PROP_FRAME_COUNT);
-	int FRAME_HEIGHT = videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT);
-	int FRAME_WIDTH = videoCapture.get(cv::CAP_PROP_FRAME_WIDTH);
+	const double FPS = videoCapture.get(cv::CAP_PROP_FPS);
+	const double FRAME_COUNT = videoCapture.get(cv::CAP_PROP_FRAME_COUNT);
+	const cv::Size FRAME_SIZE = cv::Size(videoCapture.get(cv::CAP_PROP_FRAME_WIDTH), videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT));
+	cv::Mat ROI_FRAME;
+	ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
+	ROI_FRAME = cv::Scalar_<uchar>(255);
 	// Display windows
 	cv::namedWindow("Input Video");
 	size_t maxWordsNo = 50;
 	// Background Subtractor Initialize
-	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_HEIGHT,FRAME_WIDTH, maxWordsNo);
+	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, maxWordsNo);
 	backgroundSubtractorLCDP.Initialize(inputFrame,inputFrame);
 	
 	for (int frameIndex = 1;frameIndex <= FRAME_COUNT;frameIndex++) {

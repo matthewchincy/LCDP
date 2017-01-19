@@ -41,9 +41,9 @@ protected:
 		// Store the frame index of the last occurences of this descriptor
 		int q;
 		// Store the pixel's LCDP values
-		std::vector<uint> LCDP;
+		uint LCDP[16];
 	};
-	
+
 	// Store the background's word and it's iterator
 	Descriptor * bgWordPtr, * bgWordPtrIter;
 	// Store the currect frame's word and it's iterator
@@ -177,34 +177,32 @@ protected:
 	cv::Mat resFGMaskPreFlood;
 	cv::Mat resCurrRawFGBlinkMask;
 
-	struct PxInfoBase {
-		int imgCoord_Y;
-		int imgCoord_X;
-		size_t nModelIdx;
-	};
+	
 	struct RGBPxIndex {
 		size_t R;
 		size_t G;
 		size_t B;
 	};
-	struct PxNbBase {
+	struct PxInfoBase {
+		int imgCoord_Y;
+		int imgCoord_X;
+		size_t nModelIdx;
 		RGBPxIndex pxIndex[16];
 	};
 	// Internal pixel info LUT for all possible pixel indexes
 	PxInfoBase* pxInfoLUT;
-	PxNbBase* pxNbLUT;
 
 	// Descriptor Generator
 	void DescriptorGenerator(const cv::Mat inputFrame, const size_t nPxRGBIter, const PxInfoBase *pxInfoLUT, Descriptor *tempWord);
 	// Border line reconstruct
 	cv::Mat BorderLineReconst();
 	// Compensation with Motion Hist
-	cv::Mat CompensationMotionHist();
+	void BackgroundSubtractorLCDP::CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, cv::Mat * compensationResult);
 	// Local color difference generator
-	std::vector<uint> LCDGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoLUT);
+	void LCDGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoLUT, Descriptor *tempWord);
 	// Descriptor matching
 	bool DescriptorMatching();
 	// Generate neighbourhood offset value
-	void GenerateNbOffset(const PxInfoBase pxInfoLUT, PxNbBase* pxNbLUT);
+	void GenerateNbOffset(PxInfoBase * pxInfoLUT);
 };
 #endif

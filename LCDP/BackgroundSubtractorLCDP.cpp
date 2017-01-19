@@ -227,7 +227,6 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat img_input, cv::Mat roi_i
 	nbOffset[13] = cv::Point(-2, 2);
 	nbOffset[14] = cv::Point(0, 2);
 	nbOffset[15] = cv::Point(2, 2);
-	pxNbLUT= new PxNbBase[frameInitTotalPixel];
 	pxInfoLUT = new PxInfoBase[frameInitTotalPixel];
 	size_t nPxIter = 0;
 	size_t nModelIter = 0;
@@ -238,7 +237,7 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat img_input, cv::Mat roi_i
 				pxInfoLUT[nPxIter].imgCoord_Y = (int)rowIndex;
 				pxInfoLUT[nPxIter].imgCoord_X = (int)colIndex;
 				pxInfoLUT[nPxIter].nModelIdx = nModelIter;
-				GenerateNbOffset(pxInfoLUT[nPxIter], &pxNbLUT[nPxIter]);
+				GenerateNbOffset(&pxInfoLUT[nPxIter]);
 				// RGB iteration
 				const size_t nPxRGBIter = nPxIter * 3;
 				// Descriptor iteration
@@ -253,19 +252,24 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat img_input, cv::Mat roi_i
 	RefreshModel(1, 0);
 }
 
+// Refresh model - fill up the background model
 void BackgroundSubtractorLCDP::RefreshModel(float refreshFraction, bool forceFGUpdateSwitch)
 {
-	//const size_t noSampleBeRefresh = refreshFraction<1.0f ? (size_t)(refreshFraction*wordsNo) : wordsNo;
-	//const size_t refreshStartPos = refreshFraction<1.0f ? rand() % wordsNo : 0;
-	//for (size_t nModelIter = 0; nModelIter < methodParam.frame.initTotalPixel; ++nModelIter) {
-	//	if (!forceFGUpdateSwitch||!result.lastFGMask.data[nModelIter]) {
-	//		for (size_t nCurrModelIdx = refreshStartPos; nCurrModelIdx < refreshStartPos + noSampleBeRefresh; ++nCurrModelIdx) {
-	//			//int nSampleImgCoord_Y, nSampleImgCoord_X;
-	//			//getRandSamplePosition(nSampleImgCoord_X, nSampleImgCoord_Y, pxInfoLUT[].imgCoord_X, pxInfoLUT[nPxIter].imgCoord_Y, methodParam.descriptor.LCDP.nbSize/ 2, methodParam.frame.initFrameSize);
-	//			//const size_t nSamplePxIdx = methodParam.frame.initFrameSize.width*nSampleImgCoord_Y + nSampleImgCoord_X;
-	//		}
-	//	}
-	//}
+	const size_t noSampleBeRefresh = refreshFraction<1.0f ? (size_t)(refreshFraction*WORDS_NO) : WORDS_NO;
+	const size_t refreshStartPos = refreshFraction<1.0f ? rand() % WORDS_NO : 0;
+	for (size_t nModelIter = 0; nModelIter < frameInitTotalPixel; ++nModelIter) {
+		if (!forceFGUpdateSwitch||!resLastFGMask.data[nModelIter]) {
+			for (size_t nCurrModelIdx = refreshStartPos; nCurrModelIdx < refreshStartPos + noSampleBeRefresh; ++nCurrModelIdx) {
+				int nSampleImgCoord_Y, nSampleImgCoord_X;
+				getRandSamplePosition(nSampleImgCoord_X, nSampleImgCoord_Y, pxInfoLUT[nModelIter].imgCoord_X, pxInfoLUT[nModelIter].imgCoord_Y, 0, frameInitSize);
+				const size_t nSamplePxIdx = frameInitSize.width*nSampleImgCoord_Y + nSampleImgCoord_X;
+				if (forceFGUpdateSwitch || !resLastFGMaskDilated.data[nSamplePxIdx]) {
+					const size_t nSamplePxRGBIdx = nSamplePxIdx * 3;
+
+				}
+			}
+		}
+	}
 }
 
 
@@ -314,52 +318,73 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat INPUT_IMG, cv::Mat &OUTPUT_
 }
 
 // Compensation with Motion Hist
-cv::Mat BackgroundSubtractorLCDP::CompensationMotionHist() {
-	cv::Mat compensationResult;
-	compensationResult.create(resCurrFGMask.size(), CV_8UC1);
-	compensationResult = cv::Scalar_<uchar>(0);
-	cv::Mat totalFGMask;
-	totalFGMask.create(resCurrFGMask.size(), CV_32FC1);
-	totalFGMask = cv::Scalar(0.0f);
+void BackgroundSubtractorLCDP::CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask,cv::Mat * compensationResult) {
+	
+	*compensationResult = cv::Scalar_<uchar>(0);
 
-	return compensationResult;
+	for (size_t modelIndex = 0;modelIndex < frameInitTotalPixel;modelIndex++) {
+		int totalFGMask=0;
+		
+		for (size_t nbIndex = 0;nbIndex < 9;nbIndex++) {
+			//totalFGMask+= T_1FGMask.data[pxInfoLUT[modelIndex].pxIndex[nbIndex]]
+		}
+	}
+	
+
 }
 
-std::vector<uint> BackgroundSubtractorLCDP::LCDGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoLUT)
+// Generate LCD Descriptor
+void BackgroundSubtractorLCDP::LCDGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoLUT, Descriptor *tempWord)
 {
-	std::vector<uint> result(descNbNo);
 	size_t nModelIndex = (*pxInfoLUT).nModelIdx;
-	int currPixelRGB[3];
-	int nbPixelRGB[3];
+	int R_CURR, G_CURR, B_CURR;
+	int R_NB, G_NB, B_NB;
+	int currPixelTotalRGB = 0;
+	B_CURR = inputFrame.data[nModelIndex];
+	G_CURR = inputFrame.data[nModelIndex + 1];
+	R_CURR = inputFrame.data[nModelIndex + 2];
 	for (int channel = 0;channel < 3;channel++) {
-		currPixelRGB[channel] = inputFrame.data[nModelIndex++];
+		currPixelTotalRGB += inputFrame.data[nModelIndex + channel];
 	}
-	//for (int nbPixelIndex = 0;nbPixelIndex < descNbNo;nbPixelIndex++) {
-	//	cv::Point nbPixelCoor(std::min(maxWidth,std::max(0,int(coor.x + offset[pixelIndex].x))), std::min(maxHeight, std::max(0, int(coor.y + offset[pixelIndex].y))));
-	//	cv::Vec3b nbPixel = inputFrame.at<cv::Vec3b>(nbPixelCoor.y, nbPixelCoor.x);
-	//	std::vector<int> tempRes;
-	//	// R-G
-	//	tempRes.push_back(nbPixel[2] - currPixel[1]);
-	//	// R-B
-	//	tempRes.push_back(nbPixel[2] - currPixel[0]);
-	//	// G-R
-	//	tempRes.push_back(nbPixel[1] - currPixel[2]);
-	//	// G-B
-	//	tempRes.push_back(nbPixel[1] - currPixel[0]);
-	//	// B-R
-	//	tempRes.push_back(nbPixel[0] - currPixel[2]);
-	//	// B-G
-	//	tempRes.push_back(nbPixel[0] - currPixel[1]);
-	//	// R-R
-	//	tempRes.push_back(nbPixel[2] - currPixel[2]);
-	//	// G-G
-	//	tempRes.push_back(nbPixel[1] - currPixel[1]);
-	//	// B-B
-	//	tempRes.push_back(nbPixel[0] - currPixel[0]);
-	//	result.at(pixelIndex) = tempRes;
-	//}
+	const int ratio = std::max(3, (int)(descColorDiffRatio*(currPixelTotalRGB / 3)));
+	const int nRatio = -ratio;
+	for (int nbPixelIndex = 0;nbPixelIndex < descNbNo;nbPixelIndex++) {
+		// Obtain neighbourhood pixel's value
+		B_NB =inputFrame.data[(*pxInfoLUT).pxIndex[nbPixelIndex].B];
+		G_NB = inputFrame.data[(*pxInfoLUT).pxIndex[nbPixelIndex].G];
+		R_NB = inputFrame.data[(*pxInfoLUT).pxIndex[nbPixelIndex].R];
 
-	return result;
+		uint tempResult = 0;
+		// B_NB - G_CURR
+		const int tempBNB_GCURR = B_NB - G_CURR;
+		tempResult += ((tempBNB_GCURR > ratio) ? 1 : ((tempBNB_GCURR < nRatio) ? 3 : 0));
+		// B_NB - R_CURR
+		const int tempBNB_RCURR = B_NB - R_CURR;
+		tempResult += ((tempBNB_RCURR > ratio) ? 1 : ((tempBNB_RCURR < nRatio) ? 3 : 0))<<2;
+		// G_NB - B_CURR
+		const int tempGNB_BCURR = G_NB - B_CURR;
+		tempResult += ((tempGNB_BCURR > ratio) ? 1 : ((tempGNB_BCURR < nRatio) ? 3 : 0)) << 4;
+		// G_NB - R_CURR
+		const int tempGNB_RCURR = G_NB - R_CURR;
+		tempResult += ((tempGNB_RCURR > ratio) ? 1 : ((tempGNB_RCURR < nRatio) ? 3 : 0)) << 6;
+		// R_NB - B_CURR
+		const int tempRNB_BCURR = R_NB - B_CURR;
+		tempResult += ((tempRNB_BCURR > ratio) ? 1 : ((tempRNB_BCURR < nRatio) ? 3 : 0)) << 8;
+		// R_NB - G_CURR
+		const int tempRNB_GCURR = R_NB - G_CURR;
+		tempResult += ((tempRNB_GCURR > ratio) ? 1 : ((tempRNB_GCURR < nRatio) ? 3 : 0)) << 10;
+		// B_NB - B_CURR
+		const int tempBNB_BCURR = B_NB - B_CURR;
+		tempResult += ((tempBNB_BCURR > ratio) ? 1 : ((tempBNB_BCURR < nRatio) ? 3 : 0)) << 12;
+		// G_NB - G_CURR
+		const int tempGNB_GCURR = G_NB - G_CURR;
+		tempResult += ((tempGNB_GCURR > ratio) ? 1 : ((tempGNB_GCURR < nRatio) ? 3 : 0)) << 14;
+		// R_NB - R_CURR
+		const int tempRNB_RCURR = R_NB - R_CURR;
+		tempResult += ((tempRNB_RCURR > ratio) ? 1 : ((tempRNB_RCURR < nRatio) ? 3 : 0)) << 16;
+		(*tempWord).LCDP[nbPixelIndex] = tempResult;
+	}
+
 }
 
 bool BackgroundSubtractorLCDP::DescriptorMatching()
@@ -367,18 +392,19 @@ bool BackgroundSubtractorLCDP::DescriptorMatching()
 	return false;
 }
 
-void BackgroundSubtractorLCDP::GenerateNbOffset(const PxInfoBase pxInfoLUT, PxNbBase* pxNbLUT)
+// Generate neighbourhood pixel offset value
+void BackgroundSubtractorLCDP::GenerateNbOffset(PxInfoBase* pxInfoLUT)
 {
 	const int maxWidth = frameInitSize.width-1;
 	const int maxHeight = frameInitSize.height - 1;
-	const int x = pxInfoLUT.imgCoord_X;
-	const int y = pxInfoLUT.imgCoord_Y;
+	const int x = (*pxInfoLUT).imgCoord_X;
+	const int y = (*pxInfoLUT).imgCoord_Y;
 	for (int nbIndex = 0;nbIndex < 16;nbIndex++) {
 		const int nbPixel_X = std::min(maxWidth, std::max(0, (x + nbOffset[nbIndex].x)));
 		const int nbPixel_Y = std::min(maxHeight, std::max(0, (y + nbOffset[nbIndex].y)));
-		(*pxNbLUT).pxIndex[nbIndex].B = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1))) - 2;
-		(*pxNbLUT).pxIndex[nbIndex].G = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1))) - 1;
-		(*pxNbLUT).pxIndex[nbIndex].R = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1)));
+		(*pxInfoLUT).pxIndex[nbIndex].B = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1))) - 3;
+		(*pxInfoLUT).pxIndex[nbIndex].G = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1))) - 2;
+		(*pxInfoLUT).pxIndex[nbIndex].R = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1)))-1;
 	}
 }
 
@@ -391,7 +417,7 @@ void BackgroundSubtractorLCDP::DescriptorGenerator(const cv::Mat inputFrame,cons
 	}
 	(*tempWord).p = frameIndex;
 	(*tempWord).q = frameIndex;
-	(*tempWord).LCDP = LCDGenerator(inputFrame, pxInfoLUT);
+	LCDGenerator(inputFrame, pxInfoLUT, tempWord);
 }
 
 // Border line reconstruct

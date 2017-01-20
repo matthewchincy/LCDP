@@ -87,7 +87,8 @@ BackgroundSubtractorLCDP::~BackgroundSubtractorLCDP() {
 
 void BackgroundSubtractorLCDP::Initialize(const cv::Mat img_input, cv::Mat roi_input)
 {
-
+	const int totalDiff = std::pow(2, descDiffNo);
+	LCDDiffLUT = new int[totalDiff];
 	bgWordPtr = new Descriptor[frameRoiTotalPixel*WORDS_NO];
 	memset(bgWordPtr, 0, sizeof(Descriptor)*frameRoiTotalPixel*WORDS_NO);
 	bgWordPtrIter = bgWordPtr;
@@ -130,6 +131,8 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat img_input, cv::Mat roi_i
 		upLearningRateLowerCap = FEEDBACK_T_LOWER * 2;
 		upLearningRateUpperCap = FEEDBACK_T_UPPER * 2;
 	}
+	// The compensation motion history threshold
+	compensationThreshold = 0.7;
 
 	/*=====UPDATE Parameters=====*/
 	// Initial blinking accumulate level
@@ -242,7 +245,7 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat img_input, cv::Mat roi_i
 				const size_t nPxRGBIter = nPxIter * 3;
 				// Descriptor iteration
 				const size_t nDescRGBIter = nPxRGBIter * 2;
-				DescriptorGenerator(img_input, nPxRGBIter, &pxInfoLUT[nPxIter], currWordPtrIter++);
+				DescriptorGenerator(img_input, nPxRGBIter, &pxInfoLUT[nPxIter], &currWordPtr[nPxIter]);
 				++nModelIter;
 			}
 			nPxIter++;			
@@ -258,14 +261,24 @@ void BackgroundSubtractorLCDP::RefreshModel(float refreshFraction, bool forceFGU
 	const size_t noSampleBeRefresh = refreshFraction<1.0f ? (size_t)(refreshFraction*WORDS_NO) : WORDS_NO;
 	const size_t refreshStartPos = refreshFraction<1.0f ? rand() % WORDS_NO : 0;
 	for (size_t nModelIter = 0; nModelIter < frameInitTotalPixel; ++nModelIter) {
+		
 		if (!forceFGUpdateSwitch||!resLastFGMask.data[nModelIter]) {
+			// Start index of the model of the current pixel
+			const size_t nLocalDictIdx = nModelIter*WORDS_NO;
+			// LCD descriptor threshold
+			const double LCDPThreshold = clsLCDPThreshold + (std::pow(1.5, floor(resDistThreshold.data[nModelIter] + 0.5)));
+			// RGB descriptor threshold
+			const double RGBThreshold = floor(clsRGBThreshold*resDistThreshold.data[nModelIter]);
+
 			for (size_t nCurrModelIdx = refreshStartPos; nCurrModelIdx < refreshStartPos + noSampleBeRefresh; ++nCurrModelIdx) {
+				Descriptor currPixelDesc = (*bgWordPtr)[nLocalDictIdx+nCurrModelIdx];
 				int nSampleImgCoord_Y, nSampleImgCoord_X;
 				getRandSamplePosition(nSampleImgCoord_X, nSampleImgCoord_Y, pxInfoLUT[nModelIter].imgCoord_X, pxInfoLUT[nModelIter].imgCoord_Y, 0, frameInitSize);
 				const size_t nSamplePxIdx = frameInitSize.width*nSampleImgCoord_Y + nSampleImgCoord_X;
 				if (forceFGUpdateSwitch || !resLastFGMaskDilated.data[nSamplePxIdx]) {
-					const size_t nSamplePxRGBIdx = nSamplePxIdx * 3;
+					const Descriptor nbPixelDesc = (*)
 
+					(*currPixelDesc).
 				}
 			}
 		}
@@ -279,6 +292,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat INPUT_IMG, cv::Mat &OUTPUT_
 	cv::GaussianBlur(INPUT_IMG, INPUT_IMG, preGaussianSize, 0, 0);
 
 
+	cv::Mat compensationResult;
 
 
 	// POST PROCESSING
@@ -288,7 +302,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat INPUT_IMG, cv::Mat &OUTPUT_
 	resCurrFGMask.copyTo(resLastRawFGMask);
 	cv::morphologyEx(resCurrFGMask, resCurrFGMask, cv::MORPH_OPEN, cv::Mat());
 	cv::Mat borderLineReconstructResult = BorderLineReconst();
-	cv::Mat compensationResult = CompensationMotionHist();
+	CompensationMotionHist(resT_1FGMask, resT_2FGMask,resCurrFGMask,&compensationResult);
 	cv::bitwise_or(resCurrFGMask, borderLineReconstructResult, resCurrFGMask);
 	cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_CLOSE, cv::Mat());
 	resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
@@ -323,10 +337,16 @@ void BackgroundSubtractorLCDP::CompensationMotionHist(const cv::Mat T_1FGMask, c
 	*compensationResult = cv::Scalar_<uchar>(0);
 
 	for (size_t modelIndex = 0;modelIndex < frameInitTotalPixel;modelIndex++) {
-		int totalFGMask=0;
-		
-		for (size_t nbIndex = 0;nbIndex < 9;nbIndex++) {
-			//totalFGMask+= T_1FGMask.data[pxInfoLUT[modelIndex].pxIndex[nbIndex]]
+		if (!currFGMask.data[modelIndex]) {
+			int totalFGMask = 0;
+
+			for (size_t nbIndex = 0;nbIndex < 9;nbIndex++) {
+				totalFGMask += T_1FGMask.data[pxInfoLUT[modelIndex].pxIndex[nbIndex].singleIndex] / 255;
+				totalFGMask += T_2FGMask.data[pxInfoLUT[modelIndex].pxIndex[nbIndex].singleIndex] / 255;
+				totalFGMask += currFGMask.data[pxInfoLUT[modelIndex].pxIndex[nbIndex].singleIndex] / 255;
+			}
+
+			(*compensationResult).data[modelIndex] = ((totalFGMask / 26) > compensationThreshold) ? 255 : 0;
 		}
 	}
 	
@@ -387,9 +407,50 @@ void BackgroundSubtractorLCDP::LCDGenerator(const cv::Mat inputFrame, const PxIn
 
 }
 
-bool BackgroundSubtractorLCDP::DescriptorMatching()
+// Descriptor Matching (True:Not match, False: Match)
+bool BackgroundSubtractorLCDP::DescriptorMatching(Descriptor *bgWord, Descriptor *currWord, const double LCDPThreshold, const double RGBThreshold)
 {
-	return false;
+	bool result = false;
+	if (clsLCDPDiffSwitch) {
+		result = LCDPMatching(*(*bgWord).LCDP,*(*currWord).LCDP,LCDPThreshold);
+	}
+	if (clsRGBDiffSwitch) {
+		bool tempRGBResult = RGBMatching((*bgWord).rgb, (*currWord).rgb, RGBThreshold);
+		result = (clsAndOrSwitch) ? (result&tempRGBResult) : (result | tempRGBResult);
+	}
+	if (clsRGBBrightPxSwitch) {
+		result |=BrightRGBMatching((*bgWord).rgb, (*currWord).rgb, 0);
+	}
+	return result;
+}
+
+// LCD Matching (True:Not match, False: Match)
+bool BackgroundSubtractorLCDP::LCDPMatching(const uint bgLCD,const uint currLCD,const double LCDPThreshold) {
+	uint Diff = bgLCD - currLCD;
+	return (LCDDiffLUT[Diff]>LCDPThreshold)?true:false;
+}
+
+// RGB Matching (True:Not match, False: Match)
+bool BackgroundSubtractorLCDP::RGBMatching(const uint bgRGB[], const uint currRGB[], const double RGBThreshold)
+{
+	bool result = false;
+	for (int channel = 0;channel < 3;channel++) {
+		if (std::abs(bgRGB[channel] - currRGB[channel]) > RGBThreshold) {
+			return true;
+		}
+	}
+	return result;
+}
+
+// Bright Pixel (True:Not match, False: Match)
+bool BackgroundSubtractorLCDP::BrightRGBMatching(const uint bgRGB[], const uint currRGB[], const double BrightThreshold) {
+	bool result = false;
+	for (int channel = 0;channel < 3;channel++) {
+		if ((currRGB[channel] - bgRGB[channel]) > BrightThreshold) {
+			return true;
+		}
+	}
+	return result;
 }
 
 // Generate neighbourhood pixel offset value
@@ -405,6 +466,7 @@ void BackgroundSubtractorLCDP::GenerateNbOffset(PxInfoBase* pxInfoLUT)
 		(*pxInfoLUT).pxIndex[nbIndex].B = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1))) - 3;
 		(*pxInfoLUT).pxIndex[nbIndex].G = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1))) - 2;
 		(*pxInfoLUT).pxIndex[nbIndex].R = (3 * ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1)))-1;
+		(*pxInfoLUT).pxIndex[nbIndex].singleIndex = ((nbPixel_Y*(maxWidth + 1)) + (nbPixel_X + 1)) - 1;
 	}
 }
 
@@ -424,7 +486,7 @@ void BackgroundSubtractorLCDP::DescriptorGenerator(const cv::Mat inputFrame,cons
 cv::Mat BackgroundSubtractorLCDP::BorderLineReconst()
 {
 	cv::Mat reconstructResult;
-	/*reconstructResult.create(frameInitSize, CV_8UC1);
+	reconstructResult.create(frameInitSize, CV_8UC1);
 	reconstructResult = cv::Scalar_<uchar>(0);
 	size_t height = frameInitSize.height-1;
 	size_t width = frameInitSize.width-1;
@@ -442,7 +504,7 @@ cv::Mat BackgroundSubtractorLCDP::BorderLineReconst()
 		bool completeLine = false;
 		for (int rowIndex = startIndexList_Y[line];startIndexList_Y[line] <= endIndexList_Y[line];rowIndex++) {
 			for (int colIndex = startIndexList_Y[line];startIndexList_X[line] <= endIndexList_X[line];colIndex++) {
-				if ((result.currFGMask.at<uchar>(rowIndex, colIndex) != previousIndex)&& (result.currFGMask.at<uchar>(rowIndex, colIndex) == 255)) {
+				if ((resCurrFGMask.at<uchar>(rowIndex, colIndex) != previousIndex)&& (resCurrFGMask.at<uchar>(rowIndex, colIndex) == 255)) {
 					if (!previous) {
 						previous = true;
 						previousIndex = 255;
@@ -459,7 +521,7 @@ cv::Mat BackgroundSubtractorLCDP::BorderLineReconst()
 					}
 					previousIndex_Y_start = rowIndex;
 					previousIndex_X_start = colIndex;
-				}else if((result.currFGMask.at<uchar>(rowIndex, colIndex) != previousIndex) && (result.currFGMask.at<uchar>(rowIndex, colIndex) == 0)) {
+				}else if((resCurrFGMask.at<uchar>(rowIndex, colIndex) != previousIndex) && (resCurrFGMask.at<uchar>(rowIndex, colIndex) == 0)) {
 					if (previous) {
 						previous = false;
 						previousIndex = 0;
@@ -468,20 +530,20 @@ cv::Mat BackgroundSubtractorLCDP::BorderLineReconst()
 					previousIndex_Y_end = rowIndex;
 					previousIndex_X_end = colIndex;
 				}
-				else if(result.currFGMask.at<uchar>(rowIndex, colIndex) == 255) {
+				else if(resCurrFGMask.at<uchar>(rowIndex, colIndex) == 255) {
 					if (previous) {
 						previousIndex_Y_start = rowIndex;
 						previousIndex_X_start = colIndex;
 					}
 				}
-				else if (result.currFGMask.at<uchar>(rowIndex, colIndex) == 0) {
+				else if (resCurrFGMask.at<uchar>(rowIndex, colIndex) == 0) {
 					if (!previous) {
 						size_t ybalance = previousIndex_Y_end - previousIndex_Y_start;
 						size_t xbalance = previousIndex_X_end - previousIndex_X_start;
-						if (ybalance > (methodParam.frame.initFrameSize.height / 2)) {
+						if (ybalance > (frameInitSize.height / 2)) {
 							previousIndex_Y_start = rowIndex;
 							previousIndex_X_start = colIndex;
-						}else if (xbalance > (methodParam.frame.initFrameSize.width / 2)) {
+						}else if (xbalance > (frameInitSize.width / 2)) {
 							previousIndex_Y_start = rowIndex;
 							previousIndex_X_start = colIndex;
 						}
@@ -491,6 +553,29 @@ cv::Mat BackgroundSubtractorLCDP::BorderLineReconst()
 				}
 			}
 		}
-	}*/
+	}
 	return reconstructResult;
+}
+
+// LCD difference Lookup table
+void BackgroundSubtractorLCDP::GenerateLCDDiffLUT() {
+	const int totalDiff = std::pow(2, descDiffNo);
+	for (int diffIndex = 0;diffIndex < totalDiff;diffIndex++) {
+		unsigned int count = 0;
+		while (diffIndex)
+		{
+			if (diffIndex % 1) {
+				count += 1;
+				diffIndex >>= 2;
+			}
+			else {
+
+				diffIndex >>= 1;
+				if (diffIndex % 1)
+					count += 1;
+				diffIndex >>= 1;
+			}			
+		}
+		LCDDiffLUT[diffIndex] = count;
+	}	
 }

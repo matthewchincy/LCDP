@@ -29,6 +29,8 @@ public:
 protected:
 	// Neighbourhood's offset value
 	cv::Point nbOffset[16];
+	// LCD differences LUT
+	int * LCDDiffLUT;
 
 	// Descriptor structure for each pixels
 	struct Descriptor {
@@ -94,6 +96,8 @@ protected:
 	/*=====POST-PROCESS Parameters=====*/
 	// Size of median filter
 	size_t postMedianFilterSize;
+	// The compensation motion history threshold
+	size_t compensationThreshold;
 
 	/*=====FRAME Parameters=====*/
 	// ROI frame
@@ -182,6 +186,7 @@ protected:
 		size_t R;
 		size_t G;
 		size_t B;
+		size_t singleIndex;
 	};
 	struct PxInfoBase {
 		int imgCoord_Y;
@@ -201,8 +206,16 @@ protected:
 	// Local color difference generator
 	void LCDGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoLUT, Descriptor *tempWord);
 	// Descriptor matching
-	bool DescriptorMatching();
+	bool DescriptorMatching(Descriptor *bgWord, Descriptor *currWord, const double LCDPThreshold, const double RGBThreshold);
 	// Generate neighbourhood offset value
 	void GenerateNbOffset(PxInfoBase * pxInfoLUT);
+	// LCD Matching
+	bool LCDPMatching(const uint bgLCD, const uint currLCD, const double LCDPThreshold);
+	// RGB Matching
+	bool RGBMatching(const uint bgRGB[], const uint currRGB[], const double RGBThreshold);
+	// Bright Pixel (False:Not match, True: Match)
+	bool BrightRGBMatching(const uint bgRGB[], const uint currRGB[], const double BrightThreshold);
+	// LCD difference Lookup table
+	void GenerateLCDDiffLUT();
 };
 #endif

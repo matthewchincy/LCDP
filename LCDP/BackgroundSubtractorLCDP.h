@@ -15,17 +15,14 @@ public:
 
 	// Destructer
 	~BackgroundSubtractorLCDP();
-	
-	// Program processing
-	void Process(const cv::Mat inputImg, cv::Mat &outputImg);
 
 	// Parameters and Model initialize
-	void Initialize(const cv::Mat inputImg,const cv::Mat inputROI);
+	void Initialize(const cv::Mat inputImg, const cv::Mat inputROI);
 
-	
-	
+	// Program processing
+	void Process(const cv::Mat inputImg, cv::Mat &outputImg);
 protected:
-	
+
 	// PRE-DEFINED STRUCTURE
 	// Descriptor structure for each pixels
 	struct Descriptor {
@@ -44,11 +41,11 @@ protected:
 	// RGB Neighbouring's pixels index
 	struct RGBNBPxIndex {
 		// Data index for R-Red
-		size_t R;
+		size_t rDataIndex;
 		// Data index for G-Green
-		size_t G;
+		size_t gDataIndex;
 		// Data index for B-Blue
-		size_t B;
+		size_t bDataIndex;
 		// Data index for pointer pixel
 		size_t dataIndex;
 	};
@@ -61,13 +58,23 @@ protected:
 		int coor_x;
 		// Data index for pointer pixel
 		size_t dataIndex;
+		// Data index for BGR data
+		size_t bgrDataIndex;		
+		// Start index for pixel's model
+		size_t startModelIndex;
 		// 16 neighbour pixels' info
 		RGBNBPxIndex nbIndex[16];
 	};
-	
+
 	/*=====LOOK-UP TABLE=====*/
 	// Neighbourhood's offset value
-	cv::Point nbOffset[16];
+	const cv::Point nbOffset[16] = {
+		cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1),
+		cv::Point(-1, 0),  cv::Point(1, 0),
+		cv::Point(-1, 1),  cv::Point(0, 1),  cv::Point(1, 1),
+		cv::Point(-2, -2), cv::Point(0, -2), cv::Point(2, -2),
+		cv::Point(-2, 0),  cv::Point(2, 0),
+		cv::Point(-2, 2),  cv::Point(0, 2),  cv::Point(2, 2) };
 	// Internal pixel info LUT for all possible pixel indexes
 	PxInfoBase * pxInfoLUTPtr;
 	// LCD differences LUT
@@ -75,7 +82,7 @@ protected:
 
 	/*=====MODEL Parameters=====*/
 	// Store the background's word and it's iterator
-	Descriptor * bgWordPtr, * bgWordPtrIter;
+	Descriptor * bgWordPtr, *bgWordPtrIter;
 	// Store the currect frame's word and it's iterator
 	Descriptor * currWordPtr, *currWordPtrIter;
 	// Model initialization check
@@ -92,6 +99,8 @@ protected:
 	/*=====DESCRIPTOR Parameters=====*/
 	// Size of neighbourhood 3(3x3)/5(5x5)
 	cv::Mat descNbSize;
+	// Total number of neighbourhood pixel 8(3x3)/16(5x5)
+	cv::Mat descNbNo;
 	// LCD colour differences ratio
 	cv::Mat descColorDiffRatio;
 	// Total number of LCD differences per pixel
@@ -103,7 +112,7 @@ protected:
 	// RGB detection switch
 	const bool clsRGBDiffSwitch;
 	// RGB differences threshold
-	const double clsRGBThreshold;	
+	const double clsRGBThreshold;
 	// RGB bright pixel switch
 	const bool clsRGBBrightPxSwitch;
 	// LCDP detection switch
@@ -111,7 +120,7 @@ protected:
 	// LCDP differences threshold
 	const double clsLCDPThreshold;
 	// Maximum number of LCDP differences threshold
-	const double clsLCDPMaxThreshold;	
+	const double clsLCDPMaxThreshold;
 	// LCDP detection AND (true) OR (false) switch
 	const bool clsAndOrSwitch;
 	// Neighbourhood matching switch
@@ -130,14 +139,12 @@ protected:
 	/*=====FRAME Parameters=====*/
 	// ROI frame
 	const cv::Mat frameRoi;
-	// Size of region of interest
-	const cv::Size frameRoiSize;
 	// Size of input frame
-	const cv::Size frameInitSize;
+	const cv::Size frameSize;
 	// Total number of pixel of region of interest
-	const int frameRoiTotalPixel;
+	const size_t frameRoiTotalPixel;
 	// Total number of pixel of input frame
-	const int frameInitTotalPixel;
+	const size_t frameInitTotalPixel;
 
 	/*=====UPDATE Parameters=====*/
 	// Specifies whether Tmin/Tmax scaling is enabled or not
@@ -220,29 +227,29 @@ protected:
 	void RefreshModel(const float refreshFraction, const bool forceUpdateSwitch = false);
 
 	/*=====DESCRIPTOR Methods=====*/
-	// Descriptor Generator
-	void DescriptorGenerator(const cv::Mat inputFrame, const size_t dataIndex, const PxInfoBase *pxInfoPtr, Descriptor *wordPtr);
+	// Descriptor Generator-Generate pixels' descriptor (RGB+LCDP)
+	void DescriptorGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoPtr, Descriptor *wordPtr);
 	// Local color difference generator
 	void LCDGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoPtr, Descriptor *wordPtr);
 	// Calculate word persistence value
-	float GetLocalWordWeight(const Descriptor* word, const size_t currFrameIndex, const size_t offsetValue);
+	float GetLocalWordWeight(const Descriptor* wordPtr, const size_t currFrameIndex, const size_t offsetValue);
 
 	/*=====LUT Methods=====*/
 	// Generate neighbourhood offset value
-	void GenerateNbOffset();
-	// LCD difference Lookup table
+	void GenerateNbOffset(PxInfoBase * pxInfoPtr);
+	// Generate LCD difference Lookup table
 	void GenerateLCDDiffLUT();
 
-	/*=====MATCHING Methods=====*/	
+	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match)
 	bool DescriptorMatching(Descriptor *pxWordPtr, Descriptor *currPxWordPtr, const double LCDPThreshold, const double RGBThreshold, unsigned &minRGBDistance, unsigned &minLCDPDistance);
 	// LCD Matching (RETURN-True:Not match, False: Match)
 	bool LCDPMatching(const unsigned bgLCD, const unsigned currLCD, const double LCDPThreshold, unsigned &minDistance);
 	// RGB Matching (RETURN-True:Not match, False: Match)
 	bool RGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double RGBThreshold, unsigned &minDistance);
-	// Bright Pixel (False:Not match, True: Match)
+	// Bright Pixel (RETURN-True:Not match, False: Match)
 	bool BrightRGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double BrightThreshold);
-	
+
 	/*=====POST-PROCESSING Methods=====*/
 	// Border line reconstruct
 	cv::Mat BorderLineReconst(const cv::Mat inputMask);

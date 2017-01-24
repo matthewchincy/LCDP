@@ -25,26 +25,26 @@ static const int s_anSamplesInitPattern[s_nSamplesInitPatternHeight][s_nSamplesI
 };
 
 //! returns a random init/sampling position for the specified pixel position; also guards against out-of-bounds values via image/border size check.
-static inline void getRandSamplePosition(int& x_sample, int& y_sample, const int x_orig, const int y_orig, const int border, const cv::Size& imgsize) {
+static inline void getRandSamplePosition(cv::Point & sampleCoor,const cv::Point currCoor, const int border, const cv::Size& imgsize) {
     int r = 1+rand()%s_nSamplesInitPatternTot;
-    for(x_sample=0; x_sample<s_nSamplesInitPatternWidth; ++x_sample) {
-        for(y_sample=0; y_sample<s_nSamplesInitPatternHeight; ++y_sample) {
-            r -= s_anSamplesInitPattern[y_sample][x_sample];
+    for(sampleCoor.x=0; sampleCoor.x<s_nSamplesInitPatternWidth; ++sampleCoor.x) {
+		for (sampleCoor.y = 0; sampleCoor.y < s_nSamplesInitPatternHeight; ++sampleCoor.y) {
+            r -= s_anSamplesInitPattern[sampleCoor.y][sampleCoor.x];
             if(r<=0)
                 goto stop;
         }
     }
     stop:
-    x_sample += x_orig-s_nSamplesInitPatternWidth/2;
-    y_sample += y_orig-s_nSamplesInitPatternHeight/2;
-    if(x_sample<border)
-        x_sample = border;
-    else if(x_sample>=imgsize.width-border)
-        x_sample = imgsize.width-border-1;
-    if(y_sample<border)
-        y_sample = border;
-    else if(y_sample>=imgsize.height-border)
-        y_sample = imgsize.height-border-1;
+	sampleCoor.x += currCoor.x-s_nSamplesInitPatternWidth/2;
+	sampleCoor.y += currCoor.y-s_nSamplesInitPatternHeight/2;
+    if(sampleCoor.x<border)
+		sampleCoor.x = border;
+    else if(sampleCoor.x >=imgsize.width-border)
+		sampleCoor.x = imgsize.width-border-1;
+    if(sampleCoor.y<border)
+		sampleCoor.y = border;
+    else if(sampleCoor.y >=imgsize.height-border)
+		sampleCoor.y = imgsize.height-border-1;
 }
 
 // simple 8-connected (3x3) neighbors pattern

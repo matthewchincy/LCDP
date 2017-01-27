@@ -1,12 +1,26 @@
 #include <iostream>
-
+#include <direct.h>
 #include <opencv2\opencv.hpp>
 #include "BackgroundSubtractorLCDP.h"
+#include <time.h>
 
+// Get current date/time, format is YYYY-MM-DD.HH:mm:ss
+const std::string currentDateTime() {
+	time_t     now = time(0);
+	struct tm  tstruct;
+	char       buf[80];
+	tstruct = *localtime(&now);
+	strftime(buf, sizeof(buf), "%d%m%y-%H%M%S", &tstruct);
+
+	return buf;
+}
 int main() {
 
 	//std::string filename = "../../fall.avi";
-	std::string filename = "C:/Users/mattc/Desktop/Background Subtraction/Results/fall/fall.avi";
+	//std::string filename = "C:/Users/mattc/Desktop/Background Subtraction/Results/bungalows/bungalows.avi";
+	std::string filename;
+	std::cout << "Video name? ";
+	getline(std::cin, filename);
 	cv::VideoCapture videoCapture;
 	videoCapture.open(filename);
 	// Input frame
@@ -21,6 +35,9 @@ int main() {
 		std::cout << "Video having problem. Cannot open the video file." << std::endl;
 		return -1;
 	}
+	else {
+		std::cout << "Video successful loaded!" << std::endl;
+	}
 	// Getting frames per second (FPS) of the input video
 	const double FPS = videoCapture.get(cv::CAP_PROP_FPS);
 	const double FRAME_COUNT = videoCapture.get(cv::CAP_PROP_FRAME_COUNT);
@@ -30,21 +47,34 @@ int main() {
 	ROI_FRAME = cv::Scalar_<uchar>(255);
 	// Display windows
 	cv::namedWindow("Input Video");
-	size_t maxWordsNo = 50;
+	size_t maxWordsNo = 25;
 	// Background Subtractor Initialize
 	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, maxWordsNo);
 	backgroundSubtractorLCDP.Initialize(inputFrame,inputFrame);
-	
-	for (int frameIndex = 1;frameIndex <= FRAME_COUNT;frameIndex++) {
+	// current date/time based on current system
+	time_t now = time(0);
+	tm *ltm = localtime(&now);
+	std::string folderName = "LCD Sample Consensus-" + currentDateTime();
+	const char *s1;
+	s1 = folderName.c_str();
+	_mkdir(s1);
+	folderName += "/results";
+	s1 = folderName.c_str();
+	_mkdir(s1);
+	char s[25];
+	for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
 		bool inputCheck = videoCapture.read(inputFrame);
 		if (!inputCheck) {
 			std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
 		}
-
-
 		backgroundSubtractorLCDP.Process(inputFrame, fgMask);
 		cv::imshow("Input Video", inputFrame);
 		cv::imshow("Results", fgMask);
+		std::string saveFolder;
+
+		sprintf(s, "/bin%06d.png", (currFrameIndex));
+		saveFolder = folderName +s;
+		cv::imwrite(saveFolder, fgMask);
 		// If 'esc' key is pressed, break loop
 		if (cv::waitKey(1) == 27)
 		{

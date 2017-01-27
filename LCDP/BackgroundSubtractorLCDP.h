@@ -5,7 +5,7 @@
 #include <opencv2\opencv.hpp>
 #include <vector>
 //! defines the default value for BackgroundSubtractorPAWCS::m_nMaxLocalWords and m_nMaxGlobalWords
-#define BG_DEFAULT_MAX_NO_WORDS (35)
+#define BG_DEFAULT_MAX_NO_WORDS (25)
 #define PRE_DEFAULT_GAUSSIAN_SIZE cv::Size(5,5);
 
 class BackgroundSubtractorLCDP {
@@ -242,9 +242,9 @@ protected:
 
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match)
-	bool DescriptorMatching(Descriptor *pxWordPtr, Descriptor *currPxWordPtr, const double LCDPThreshold, const double RGBThreshold, float &minRGBDistance, float &minLCDPDistance);
+	bool DescriptorMatching(Descriptor *pxWordPtr, Descriptor *currPxWordPtr, const size_t pxPointer, const double LCDPThreshold, const double RGBThreshold, float &minRGBDistance, float &minLCDPDistance);
 	// LCD Matching (RETURN-True:Not match, False: Match)
-	bool LCDPMatching(const unsigned bgLCD, const unsigned currLCD, const double LCDPThreshold, float &minDistance);
+	bool LCDPMatching(const unsigned bgLCD, const unsigned currLCD, const size_t pxPointer, const double LCDPThreshold, float &minDistance);
 	// RGB Matching (RETURN-True:Not match, False: Match)
 	bool RGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double RGBThreshold, float &minDistance);
 	// Bright Pixel (RETURN-True:Not match, False: Match)

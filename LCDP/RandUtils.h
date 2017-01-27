@@ -1,15 +1,36 @@
 #pragma once
 
-/*// gaussian 3x3 pattern, based on 'floor(fspecial('gaussian', 3, 1)*256)'
-static const int s_nSamplesInitPatternWidth = 3;
-static const int s_nSamplesInitPatternHeight = 3;
-static const int s_nSamplesInitPatternTot = 256;
-static const int s_anSamplesInitPattern[s_nSamplesInitPatternHeight][s_nSamplesInitPatternWidth] = {
+// gaussian 3x3 pattern, based on 'floor(fspecial('gaussian', 3, 1)*256)'
+static const int s_nSamplesInitPatternWidth_3 = 3;
+static const int s_nSamplesInitPatternHeight_3 = 3;
+static const int s_nSamplesInitPatternTot_3 = 256;
+static const int s_anSamplesInitPattern_3[s_nSamplesInitPatternHeight_3][s_nSamplesInitPatternWidth_3] = {
     {19,    32,    19,},
     {32,    52,    32,},
     {19,    32,    19,},
-};*/
-
+};
+//! returns a random init/sampling position for the specified pixel position; also guards against out-of-bounds values via image/border size check.
+static inline void getRandSamplePosition_3x3(cv::Point & sampleCoor, const cv::Point currCoor, const int border, const cv::Size& imgsize) {
+	int r = 1 + rand() % s_nSamplesInitPatternTot_3;
+	for (sampleCoor.x = 0; sampleCoor.x<s_nSamplesInitPatternWidth_3; ++sampleCoor.x) {
+		for (sampleCoor.y = 0; sampleCoor.y < s_nSamplesInitPatternHeight_3; ++sampleCoor.y) {
+			r -= s_anSamplesInitPattern_3[sampleCoor.y][sampleCoor.x];
+			if (r <= 0)
+				goto stop;
+		}
+	}
+stop:
+	sampleCoor.x += currCoor.x - s_nSamplesInitPatternWidth_3 / 2;
+	sampleCoor.y += currCoor.y - s_nSamplesInitPatternHeight_3 / 2;
+	if (sampleCoor.x<border)
+		sampleCoor.x = border;
+	else if (sampleCoor.x >= imgsize.width - border)
+		sampleCoor.x = imgsize.width - border - 1;
+	if (sampleCoor.y<border)
+		sampleCoor.y = border;
+	else if (sampleCoor.y >= imgsize.height - border)
+		sampleCoor.y = imgsize.height - border - 1;
+}
 // gaussian 7x7 pattern, based on 'floor(fspecial('gaussian',7,2)*512)'
 static const int s_nSamplesInitPatternWidth = 7;
 static const int s_nSamplesInitPatternHeight = 7;

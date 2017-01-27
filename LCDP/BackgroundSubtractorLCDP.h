@@ -5,8 +5,8 @@
 #include <opencv2\opencv.hpp>
 #include <vector>
 //! defines the default value for BackgroundSubtractorPAWCS::m_nMaxLocalWords and m_nMaxGlobalWords
-#define BG_DEFAULT_MAX_NO_WORDS (50)
-#define PRE_DEFAULT_GAUSSIAN_SIZE cv::Size(3,3);
+#define BG_DEFAULT_MAX_NO_WORDS (35)
+#define PRE_DEFAULT_GAUSSIAN_SIZE cv::Size(5,5);
 
 class BackgroundSubtractorLCDP {
 public:
@@ -242,11 +242,11 @@ protected:
 
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match)
-	bool DescriptorMatching(Descriptor *pxWordPtr, Descriptor *currPxWordPtr, const double LCDPThreshold, const double RGBThreshold, unsigned &minRGBDistance, unsigned &minLCDPDistance);
+	bool DescriptorMatching(Descriptor *pxWordPtr, Descriptor *currPxWordPtr, const double LCDPThreshold, const double RGBThreshold, float &minRGBDistance, float &minLCDPDistance);
 	// LCD Matching (RETURN-True:Not match, False: Match)
-	bool LCDPMatching(const unsigned bgLCD, const unsigned currLCD, const double LCDPThreshold, unsigned &minDistance);
+	bool LCDPMatching(const unsigned bgLCD, const unsigned currLCD, const double LCDPThreshold, float &minDistance);
 	// RGB Matching (RETURN-True:Not match, False: Match)
-	bool RGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double RGBThreshold, unsigned &minDistance);
+	bool RGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double RGBThreshold, float &minDistance);
 	// Bright Pixel (RETURN-True:Not match, False: Match)
 	bool BrightRGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double BrightThreshold);
 
@@ -254,6 +254,6 @@ protected:
 	// Border line reconstruct
 	cv::Mat BorderLineReconst(const cv::Mat inputMask);
 	// Compensation with Motion Hist
-	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const float currCompensationThreshold);
+	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const cv::Mat compensationThreshold);
 };
 #endif

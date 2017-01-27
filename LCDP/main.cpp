@@ -70,7 +70,7 @@ int main() {
 		_mkdir(s1);		
 	}
 	char s[25];
-	for (int currFrameIndex = 1;currFrameIndex <= 2;currFrameIndex++) {
+	for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
 		bool inputCheck = videoCapture.read(inputFrame);
 		if (!inputCheck) {
 			std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;

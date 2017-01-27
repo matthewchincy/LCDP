@@ -1,5 +1,6 @@
 #include "BackgroundSubtractorLCDP.h"
 #include "RandUtils.h"
+#include <fstream>
 
 // Local define used to specify the desc dist threshold offset used for unstable regions
 #define UNSTAB_DESC_DIST_OFFSET (3.00f)
@@ -84,12 +85,10 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::
 	CV_Assert(WORDS_NO > 0);
 }
 BackgroundSubtractorLCDP::~BackgroundSubtractorLCDP() {
-	//delete[] pxInfoLUTPtr;
-	//delete[] LCDDiffLUTPtr;
-	//delete[] bgWordPtr;
-	//delete[] bgWordPtrIter;
+	delete[] pxInfoLUTPtr;
+	delete[] LCDDiffLUTPtr;
+	delete[] bgWordPtr;
 	delete[] currWordPtr;
-	delete[] currWordPtrIter;
 }
 
 void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inputROI)
@@ -976,4 +975,95 @@ cv::Mat BackgroundSubtractorLCDP::CompensationMotionHist(const cv::Mat T_1FGMask
 	}
 
 	return compensationResult;
+}
+
+/*=====OTHERS Methods=====*/
+// Save parameters
+void BackgroundSubtractorLCDP::SaveParameter(std::string folderName) {
+	std::ofstream myfile;
+	myfile.open(folderName +"/parameter.txt", std::ios::app);
+	myfile << "\n----VIDEO PARAMETER----\n";
+	myfile << "VIDEO WIDTH:";
+	myfile << frameSize.width;
+	myfile << "\nVIDEO HEIGHT:";
+	myfile << frameSize.height;
+	myfile << "\n\n----METHOD THRESHOLD----\n<< << <-DESCRIPTOR DEFAULT PARAMETER-> >> >>";
+	myfile << "\nTotal number of LCD differences per pixel:";
+	myfile << descDiffNo;
+	myfile << "\nTotal number of LCD descriptor's neighbour:";
+	myfile << int(*(descNbNo.data));
+	myfile << "\nLCD colour differences ratio:";
+	float * colorDiffRatio = (float*)(descColorDiffRatio.data);
+	myfile << *(colorDiffRatio);
+	myfile << "\nPersistence's offset value:";
+	myfile << descOffsetValue;
+	myfile << "\n\n<<<<<-CLASSIFIER DEFAULT PARAMETER->>>>>";
+	myfile << "\nRGB detection switch:";
+	myfile << clsRGBDiffSwitch;
+	myfile << "\nRGB dark pixel detection switch:";
+	myfile << clsRGBBrightPxSwitch;
+	myfile << "\nLCD detection switch:";
+	myfile << clsLCDPDiffSwitch;
+	myfile << "\nLCD detection AND (true) OR (false) switch:";
+	myfile << clsAndOrSwitch;
+	myfile << "\nDefault LCD differences threshold:";
+	myfile << clsLCDPThreshold;
+	myfile << "\nMaximum of LCD differences threshold:";
+	myfile << clsLCDPMaxThreshold;
+	myfile << "\nInitial matched persistence value threshold:";
+	float * persistenceThreshold = (float*)(clsPersistenceThreshold.data);
+	myfile << *(persistenceThreshold);
+	myfile << "\nNeighbourhood matching switch:";
+	myfile << clsNbMatchSwitch;
+	myfile << "\nTotal number of pixel's neighbour:";
+	myfile << int(*(clsNbNo.data));
+	myfile << "\n\n<<<<<-UPDATE DEFAULT PARAMETER->>>>>";
+	myfile << "\nRandom replace model switch:";
+	myfile << upRandomReplaceSwitch;
+	myfile << "\nInitial random replace model probability:";
+	float * updateRate = (float*)(resUpdateRate.data);
+	myfile << *(updateRate);
+	myfile << "\nRandom update neighbourhood model switch:";
+	myfile << upRandomUpdateNbSwitch;
+	myfile << "\nInitial update neighbourhood model probability:";
+	myfile << *(updateRate);
+	myfile << "\nTotal number of neighbour undergo updates:";
+	myfile << int(*(upNbNo.data));
+	myfile << "\nFeedback loop switch:";
+	myfile << upFeedbackSwitch;
+	myfile << "\nInitial model-observation similarity, d(LT):";
+	myfile << int(*(resMeanFinalSegmRes_LT.data));
+	myfile << "\nInitial model-observation similarity, d(ST):";
+	myfile << int(*(resMeanFinalSegmRes_ST.data));
+	myfile << "\nInitial segmentation noise accumulator, v:";
+	float * variationModulator = (float*)(resVariationModulator.data);
+	myfile << *(variationModulator);
+	myfile << "\nInitial update rates, T(x):";
+	myfile << *(updateRate);
+	myfile << "\nInitial commonValue, R:";
+	float * distThreshold = (float*)(resDistThreshold.data);
+	myfile << *(distThreshold);
+	myfile << "\nInitial blinking accumulate level:";
+	float * blinkAccLevel = (float*)(upBlinkAccLevel.data);
+	myfile << *(blinkAccLevel);
+	myfile << "\nSegmentation noise accumulator increase value:";
+	myfile << FEEDBACK_V_DECR;
+	myfile << "\nSegmentation noise accumulator decrease value:";
+	myfile << FEEDBACK_V_INCR;
+	myfile << "\nLocal update rate change factor (Desc):";
+	myfile << FEEDBACK_T_DECR;
+	myfile << "\nLocal update rate change factor (Incr):";
+	myfile << FEEDBACK_T_INCR;
+	myfile << "\nLocal update rate (Lower):";
+	myfile << upLearningRateLowerCap;
+	myfile << "\nLocal update rate (Upper):";
+	myfile << upLearningRateUpperCap;
+	myfile << "\nLocal distance threshold change factor:";
+	myfile << FEEDBACK_R_VAR;
+	myfile << "\nSamples for moving averages:";
+	myfile << upSamplesForMovingAvgs;
+	myfile << "\nMaximum number of model:";
+	myfile << WORDS_NO;
+
+	myfile.close();
 }

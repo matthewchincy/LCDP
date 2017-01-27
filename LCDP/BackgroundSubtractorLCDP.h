@@ -21,6 +21,10 @@ public:
 
 	// Program processing
 	void Process(const cv::Mat inputImg, cv::Mat &outputImg);
+
+	/*=====OTHERS Methods=====*/
+	// Save parameters
+	void SaveParameter(std::string folderName);
 protected:
 
 	// PRE-DEFINED STRUCTURE
@@ -255,5 +259,7 @@ protected:
 	cv::Mat BorderLineReconst(const cv::Mat inputMask);
 	// Compensation with Motion Hist
 	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const cv::Mat compensationThreshold);
+
+	
 };
 #endif

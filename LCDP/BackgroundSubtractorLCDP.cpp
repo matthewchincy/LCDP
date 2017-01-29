@@ -56,7 +56,7 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::
 	// LCDP detection switch
 	clsLCDPDiffSwitch(true),
 	// LCDP differences threshold
-	clsLCDPThreshold(36),
+	clsLCDPThreshold(28),
 	// Maximum number of LCDP differences threshold
 	clsLCDPMaxThreshold(72),	
 	// LCDP detection AND (true) OR (false) switch
@@ -592,6 +592,9 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	cv::Mat compensationResult;
 
 	// POST PROCESSING
+	//cv::Mat image_thresh;
+	
+
 	cv::bitwise_xor(resCurrFGMask, resLastRawFGMask, resCurrRawFGBlinkMask);
 	cv::bitwise_or(resCurrRawFGBlinkMask, resLastRawFGBlinkMask, resBlinksFrame);
 	resCurrRawFGBlinkMask.copyTo(resLastRawFGBlinkMask);
@@ -602,10 +605,33 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	cv::bitwise_or(resCurrFGMask, borderLineReconstructResult, resCurrFGMask);
 	cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_CLOSE, cv::Mat());
 	resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
+	//cv::threshold(resFGMaskFloodedHoles, image_thresh, 125, 255, cv::THRESH_BINARY);
+
+	//// Loop through the border pixels and if they're black, floodFill from there
+	//cv::Mat mask;
+	//image_thresh.copyTo(mask);
+	//for (int i = 0; i < mask.cols; i++) {
+	//	if (mask.at<char>(0, i) == 0) {
+	//		cv::floodFill(mask, cv::Point(i, 0), 255, 0, 10, 10);
+	//	}
+	//	if (mask.at<char>(mask.rows - 1, i) == 0) {
+	//		cv::floodFill(mask, cv::Point(i, mask.rows - 1), 255, 0, 10, 10);
+	//	}
+	//}
+	//for (int i = 0; i < mask.rows; i++) {
+	//	if (mask.at<char>(i, 0) == 0) {
+	//		cv::floodFill(mask, cv::Point(0, i), 255, 0, 10, 10);
+	//	}
+	//	if (mask.at<char>(i, mask.cols - 1) == 0) {
+	//		cv::floodFill(mask, cv::Point(mask.cols - 1, i), 255, 0, 10, 10);
+	//	}
+	//}
+
 	cv::floodFill(resFGMaskFloodedHoles, cv::Point(0, 0), UCHAR_MAX);
 	cv::bitwise_not(resFGMaskFloodedHoles, resFGMaskFloodedHoles);
 	cv::erode(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
 	cv::bitwise_or(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
+	//cv::bitwise_or(resCurrFGMask, mask, resCurrFGMask);
 	cv::bitwise_or(resCurrFGMask, resFGMaskPreFlood, resCurrFGMask);
 	cv::bitwise_and(resCurrFGMask, compensationResult, resCurrFGMask);
 

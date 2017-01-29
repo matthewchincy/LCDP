@@ -5,6 +5,8 @@
 #include <time.h>
 #include <fstream>
 #include <iomanip>
+#include<conio.h>
+#include<windows.h>
 
 // Get current date/time, format is DDMMYYHHmmss
 const std::string currentDateTimeStamp(time_t * now);
@@ -15,14 +17,12 @@ void SaveParameter(std::string folderName);
 // Evaluate results
 void EvaluateResult(std::string filename, std::string folderName, std::string currFolderName);
 
-
-
-
 std::string showInput;
 std::string showOutput;
 std::string saveResult;
 std::string evaluateResult;
 int main() {
+	
 	//EvaluateResult("bungalows", "bungalows/LCD Sample Consensus-300117-004202/results", "bungalows/LCD Sample Consensus-300117-004202");
 	//std::string filename = "../../fall.avi";
 	//std::string filename = "C:/Users/mattc/Desktop/Background Subtraction/Results/bungalows/bungalows.avi";
@@ -145,6 +145,14 @@ int main() {
 		EvaluateResult(filename, folderName, currFolderName);
 	}
 	std::cout << "Completed!" << std::endl;
+	Beep(1568, 200);
+	Beep(1568, 200);
+	Beep(1568, 200);
+	Beep(1245, 1000);
+	Beep(1397, 200);
+	Beep(1397, 200);
+	Beep(1397, 200);
+	Beep(1175, 1000);
 	system("pause");
 	return 0;
 }
@@ -172,7 +180,7 @@ void SaveParameter(std::string folderName) {
 	std::ofstream myfile;
 	myfile.open(folderName + "/parameter.txt", std::ios::app);
 	myfile << "----MAIN PROCESS PARAMETER----\n";
-	myfile << "RESULT FOLDER:\n";
+	myfile << "RESULT FOLDER: ";
 	myfile << folderName;
 	myfile << "\n";
 	myfile.close();

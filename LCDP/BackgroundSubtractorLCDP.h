@@ -12,6 +12,9 @@ class BackgroundSubtractorLCDP {
 public:
 	// Constructer
 	BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo);
+	BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo, bool inputRGBDiffSwitch,
+		size_t inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, size_t inputLCDPThreshold, size_t inputLCDPMaxThreshold,
+		bool inputAndOrSwitch, bool inputNbMatchSwitch, bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch);
 
 	// Destructer
 	~BackgroundSubtractorLCDP();
@@ -25,8 +28,6 @@ public:
 	/*=====OTHERS Methods=====*/
 	// Save parameters
 	void SaveParameter(std::string folderName);
-	// Alter LCDP Threshold
-	void EditLCDPThreshold(const double inputLCDPThrehsold);
 	
 protected:
 

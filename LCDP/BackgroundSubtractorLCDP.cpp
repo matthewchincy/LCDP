@@ -88,6 +88,73 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::
 {
 	CV_Assert(WORDS_NO > 0);
 }
+
+BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo, bool inputRGBDiffSwitch,
+	size_t inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, size_t inputLCDPThreshold, size_t inputLCDPMaxThreshold,
+	bool inputAndOrSwitch, bool inputNbMatchSwitch, bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch) :
+	/*=====LOOK-UP TABLE=====*/
+	// Internal pixel info LUT for all possible pixel indexes
+	pxInfoLUTPtr(nullptr),
+	// LCD differences LUT
+	LCDDiffLUTPtr(nullptr),
+
+	/*=====MODEL Parameters=====*/
+	// Store the background's word and it's iterator
+	bgWordPtr(nullptr),
+	bgWordPtrIter(nullptr),
+	// Store the currect frame's word and it's iterator
+	currWordPtr(nullptr),
+	currWordPtrIter(nullptr),
+	// Total number of words per pixel
+	WORDS_NO(inputWordsNo),
+	// Frame index
+	frameIndex(1),
+
+	/*=====DESCRIPTOR Parameters=====*/
+	// Total number of LCD differences per pixel
+	descDiffNo(18),
+	// Persistence's offset value;
+	descOffsetValue(1000),
+
+	/*=====CLASSIFIER Parameters=====*/
+	// RGB detection switch
+	clsRGBDiffSwitch(inputRGBDiffSwitch),
+	// RGB differences threshold
+	clsRGBThreshold(inputRGBThreshold),
+	// RGB bright pixel switch
+	clsRGBBrightPxSwitch(inputRGBBrightPxSwitch),
+	// LCDP detection switch
+	clsLCDPDiffSwitch(inputLCDPDiffSwitch),
+	// LCDP differences threshold
+	clsLCDPThreshold(inputLCDPThreshold),
+	// Maximum number of LCDP differences threshold
+	clsLCDPMaxThreshold(inputLCDPMaxThreshold),
+	// LCDP detection AND (true) OR (false) switch
+	clsAndOrSwitch(inputAndOrSwitch),
+	// Neighbourhood matching switch
+	clsNbMatchSwitch(inputNbMatchSwitch),
+
+	/*=====FRAME Parameters=====*/
+	// ROI frame
+	frameRoi(inputROI),
+	// Size of input frame
+	frameSize(inputFrameSize),
+	// Total number of pixel of region of interest
+	frameRoiTotalPixel(cv::countNonZero(inputROI)),
+	// Total number of pixel of input frame
+	frameInitTotalPixel(inputFrameSize.area()),
+
+	/*=====UPDATE Parameters=====*/
+	// Random replace model switch
+	upRandomReplaceSwitch(inputRandomReplaceSwitch),
+	// Random update neighbourhood model switch
+	upRandomUpdateNbSwitch(inputRandomUpdateNbSwitch),
+	// Feedback loop switch
+	upFeedbackSwitch(inputFeedbackSwitch)
+{
+	CV_Assert(WORDS_NO > 0);
+}
+
 BackgroundSubtractorLCDP::~BackgroundSubtractorLCDP() {
 	delete[] pxInfoLUTPtr;
 	delete[] LCDDiffLUTPtr;
@@ -1060,15 +1127,11 @@ cv::Mat BackgroundSubtractorLCDP::ContourFill(const cv::Mat img) {
 	}
 	//step 3: remove the border
 	input = input.rowRange(cv::Range(1, input.rows - 1));
-	//cout<<m_with_border<<endl;
 	input = input.colRange(cv::Range(1, input.cols - 1));
 	input.copyTo(output);
 	return output;
 }
 
-void BackgroundSubtractorLCDP::EditLCDPThreshold(const double inputLCDPThrehsold) {
-	clsLCDPThreshold = inputLCDPThrehsold;
-}
 /*=====OTHERS Methods=====*/
 // Save parameters
 void BackgroundSubtractorLCDP::SaveParameter(std::string folderName) {

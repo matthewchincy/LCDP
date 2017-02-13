@@ -25,6 +25,9 @@ public:
 	/*=====OTHERS Methods=====*/
 	// Save parameters
 	void SaveParameter(std::string folderName);
+	// Alter LCDP Threshold
+	void EditLCDPThreshold(const double inputLCDPThrehsold);
+	
 protected:
 
 	// PRE-DEFINED STRUCTURE
@@ -122,7 +125,7 @@ protected:
 	// LCDP detection switch
 	const bool clsLCDPDiffSwitch;
 	// LCDP differences threshold
-	const double clsLCDPThreshold;
+	double clsLCDPThreshold;
 	// Maximum number of LCDP differences threshold
 	const double clsLCDPMaxThreshold;
 	// LCDP detection AND (true) OR (false) switch
@@ -224,6 +227,10 @@ protected:
 	cv::Mat resFGMaskPreFlood;
 	// Current raw foreground blinking mask
 	cv::Mat resCurrRawFGBlinkMask;
+	// Current pixel distance
+	cv::Mat resCurrPxDistance;
+	// Current pixel average distance
+	cv::Mat resCurrAvgDistance;
 
 	/*=====METHODS=====*/
 	/*=====DEFAULT methods=====*/
@@ -259,7 +266,8 @@ protected:
 	cv::Mat BorderLineReconst(const cv::Mat inputMask);
 	// Compensation with Motion Hist
 	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const cv::Mat compensationThreshold);
-
+	cv::Mat ContourFill(const cv::Mat img);
+	
 	
 };
 #endif

@@ -21,6 +21,7 @@ std::string showInput;
 std::string showOutput;
 std::string saveResult;
 std::string evaluateResult;
+std::string inputLCDPThreshold;
 int main() {
 	
 	//EvaluateResult("bungalows", "bungalows/LCD Sample Consensus-300117-004202/results", "bungalows/LCD Sample Consensus-300117-004202");
@@ -34,6 +35,8 @@ int main() {
 	getline(std::cin, showInput);
 	std::cout << "Show output frame(1/0)?";
 	getline(std::cin, showOutput);
+	std::cout << "LCDP Threshold(0-Default)?";
+	getline(std::cin, inputLCDPThreshold);
 	std::cout << "Save output frame(1/0)?";
 	getline(std::cin, saveResult);
 	std::cout << "Evaluate result(1/0)?";
@@ -69,6 +72,9 @@ int main() {
 	size_t maxWordsNo = 25;
 	// Background Subtractor Initialize
 	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, maxWordsNo);
+	if (std::stoi(inputLCDPThreshold) > 0) {
+		backgroundSubtractorLCDP.EditLCDPThreshold(std::stod(inputLCDPThreshold));
+	}
 	backgroundSubtractorLCDP.Initialize(inputFrame, inputFrame);
 
 	// current date/time based on current system

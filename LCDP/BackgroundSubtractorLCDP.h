@@ -4,22 +4,20 @@
 #define __BackgroundSubtractorLCDP_H_INCLUDED
 #include <opencv2\opencv.hpp>
 #include <vector>
-//! defines the default value for BackgroundSubtractorPAWCS::m_nMaxLocalWords and m_nMaxGlobalWords
-#define BG_DEFAULT_MAX_NO_WORDS (25)
-#define PRE_DEFAULT_GAUSSIAN_SIZE cv::Size(5,5);
 
 class BackgroundSubtractorLCDP {
 public:
-	// Constructer
+	/*******CONSTRUCTOR*******/
 	BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo);
 	BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo, bool inputRGBDiffSwitch,
-		size_t inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, size_t inputLCDPThreshold, size_t inputLCDPMaxThreshold,
-		bool inputAndOrSwitch, bool inputNbMatchSwitch, bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch);
+		double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, double inputLCDPThreshold,
+		double inputLCDPMaxThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch, bool inputRandomReplaceSwitch, 
+		bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch);
 
-	// Destructer
+	/*******DESTRUCTOR*******/
 	~BackgroundSubtractorLCDP();
 
-	// Parameters and Model initialize
+	/*******INITIALIZATION*******/
 	void Initialize(const cv::Mat inputImg, const cv::Mat inputROI);
 
 	// Program processing
@@ -29,19 +27,23 @@ public:
 	// Save parameters
 	void SaveParameter(std::string folderName);
 	
+	/*=====DEBUG=====*/
+	
+	bool debugSwitch = false;
+	void DebugPxLocation(int x, int y);
 protected:
 
 	// PRE-DEFINED STRUCTURE
-	// Descriptor structure for each pixels
-	struct Descriptor {
+	// Descriptor structure
+	struct DescriptorStruct {
 		// Store the pixel's RGB values
 		unsigned rgb[3];
 		// Store the number of frames that having same descriptor
-		int frameCount;
+		unsigned frameCount;
 		// Store the frame index of the first occurences/initial of this descriptor
-		int p;
+		unsigned p;
 		// Store the frame index of the last occurences of this descriptor
-		int q;
+		unsigned q;
 		// Store the pixel's LCDP values
 		unsigned LCDP[16];
 	};
@@ -58,8 +60,8 @@ protected:
 		size_t dataIndex;
 	};
 
-	// Pixels info
-	struct PxInfoBase {
+	// Pixel info structure
+	struct PxInfoStruct {
 		// Coordinate Y value
 		int coor_y;
 		// Coordinate X value
@@ -84,17 +86,15 @@ protected:
 		cv::Point(-2, 0),  cv::Point(2, 0),
 		cv::Point(-2, 2),  cv::Point(0, 2),  cv::Point(2, 2) };
 	// Internal pixel info LUT for all possible pixel indexes
-	PxInfoBase * pxInfoLUTPtr;
+	PxInfoStruct * pxInfoLUTPtr;
 	// LCD differences LUT
-	unsigned * LCDDiffLUTPtr;
+	float * LCDDiffLUTPtr;
 
 	/*=====MODEL Parameters=====*/
 	// Store the background's word and it's iterator
-	Descriptor * bgWordPtr, *bgWordPtrIter;
+	DescriptorStruct * bgWordPtr, *bgWordPtrIter;
 	// Store the currect frame's word and it's iterator
-	Descriptor * currWordPtr, *currWordPtrIter;
-	// Model initialization check
-	bool modelInitCheck = false;
+	DescriptorStruct * currWordPtr, *currWordPtrIter;
 	// Total number of words per pixel
 	const size_t WORDS_NO;
 	// Frame index
@@ -102,7 +102,7 @@ protected:
 
 	/*=====PRE-PROCESS Parameters=====*/
 	// Size of gaussian filter
-	cv::Size preGaussianSize = PRE_DEFAULT_GAUSSIAN_SIZE;
+	cv::Size preGaussianSize;
 
 	/*=====DESCRIPTOR Parameters=====*/
 	// Size of neighbourhood 3(3x3)/5(5x5)
@@ -111,7 +111,7 @@ protected:
 	cv::Mat descNbNo;
 	// LCD colour differences ratio
 	cv::Mat descColorDiffRatio;
-	// Total number of LCD differences per pixel
+	// Total number of differences per descriptor
 	const size_t descDiffNo;
 	// Persistence's offset value;
 	const size_t descOffsetValue;
@@ -133,16 +133,18 @@ protected:
 	const bool clsAndOrSwitch;
 	// Neighbourhood matching switch
 	const bool clsNbMatchSwitch;
-	// Total number of neighbour 8(3x3)/16(5x5)
+	// Total number of neighbour 0(0)/8(3x3)/16(5x5)
 	cv::Mat clsNbNo;
-	// Matched persistence value threshold
+	// Matched persistence threshold value
 	cv::Mat clsPersistenceThreshold;
-
+	// Minimum persistence threhsold value
+	float clsMinPersistenceThreshold;
+	
 	/*=====POST-PROCESS Parameters=====*/
 	// Size of median filter
 	size_t postMedianFilterSize;
 	// The compensation motion history threshold
-	cv::Mat compensationThreshold;
+	cv::Mat postCompensationThreshold;
 
 	/*=====FRAME Parameters=====*/
 	// ROI frame
@@ -174,11 +176,7 @@ protected:
 	const bool upFeedbackSwitch;
 
 	size_t upSamplesForMovingAvgs;
-
-	/*=====OTHERS Parameters=====*/
-	// Local define used to specify the color dist threshold offset used for unstable regions
-	double STAB_COLOR_DIST_OFFSET;
-
+	
 	/*=====RESULTS=====*/
 	// Per-pixel distance thresholds ('R(x)', but used as a relative value to determine both 
 	// intensity and descriptor variation thresholds)
@@ -239,24 +237,24 @@ protected:
 	void RefreshModel(const float refreshFraction, const bool forceUpdateSwitch = false);
 
 	/*=====DESCRIPTOR Methods=====*/
-	// Descriptor Generator-Generate pixels' descriptor (RGB+LCDP)
-	void DescriptorGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoPtr, Descriptor *wordPtr);
+	// DescriptorStruct Generator-Generate pixels' descriptor (RGB+LCDP)
+	void DescriptorGenerator(const cv::Mat inputFrame, const PxInfoStruct *pxInfoPtr, DescriptorStruct *wordPtr);
 	// Local color difference generator
-	void LCDGenerator(const cv::Mat inputFrame, const PxInfoBase *pxInfoPtr, Descriptor *wordPtr);
+	void LCDGenerator(const cv::Mat inputFrame, const PxInfoStruct *pxInfoPtr, DescriptorStruct *wordPtr);
 	// Calculate word persistence value
-	float GetLocalWordWeight(const Descriptor* wordPtr, const size_t currFrameIndex, const size_t offsetValue);
+	float GetLocalWordWeight(const DescriptorStruct* wordPtr, const size_t currFrameIndex, const size_t offsetValue);
 
 	/*=====LUT Methods=====*/
 	// Generate neighbourhood offset value
-	void GenerateNbOffset(PxInfoBase * pxInfoPtr);
+	void GenerateNbOffset(PxInfoStruct * pxInfoPtr);
 	// Generate LCD difference Lookup table
 	void GenerateLCDDiffLUT();
 
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match)
-	bool DescriptorMatching(Descriptor *pxWordPtr, Descriptor *currPxWordPtr, const size_t pxPointer, const double LCDPThreshold, const double RGBThreshold, float &minRGBDistance, float &minLCDPDistance);
+	bool DescriptorMatching(DescriptorStruct *pxWordPtr, DescriptorStruct *currPxWordPtr, const size_t pxPointer, const double LCDPThreshold, const double RGBThreshold, float &minRGBDistance, float &minLCDPDistance);
 	// LCD Matching (RETURN-True:Not match, False: Match)
-	bool LCDPMatching(const unsigned bgLCD, const unsigned currLCD, const size_t pxPointer, const double LCDPThreshold, float &minDistance);
+	bool LCDPMatching(DescriptorStruct *bgWord, DescriptorStruct *currWord, const size_t pxPointer, const double LCDPThreshold, float &minDistance);
 	// RGB Matching (RETURN-True:Not match, False: Match)
 	bool RGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double RGBThreshold, float &minDistance);
 	// Bright Pixel (RETURN-True:Not match, False: Match)
@@ -266,9 +264,11 @@ protected:
 	// Border line reconstruct
 	cv::Mat BorderLineReconst(const cv::Mat inputMask);
 	// Compensation with Motion Hist
-	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const cv::Mat compensationThreshold);
+	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const cv::Mat postCompensationThreshold);
 	cv::Mat ContourFill(const cv::Mat img);
 	
-	
+	/*=====DEBUG=====*/
+	cv::Point debPxLocation;
+	size_t debPxPointer;
 };
 #endif

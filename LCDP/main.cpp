@@ -9,6 +9,7 @@
 #include<windows.h>
 
 // Checking input value
+int read_int_input(std::string question);
 double read_double_input(std::string question);
 bool read_bool_input(std::string question);
 cv::VideoCapture read_video_input(std::string question, std::string *filename);
@@ -25,18 +26,24 @@ bool showInput;
 bool showOutput;
 bool saveResult;
 bool evaluateResult;
+bool debugSwitch;
 double inputLCDPThreshold;
 int main() {
 
 	std::string filename;
 	cv::VideoCapture videoCapture = read_video_input("Video folder", &filename);
-
+	int debugX = 0;
+	int debugY = 0;
 	showInput = read_bool_input("Show input frame(1/0)");
 	showOutput = read_bool_input("Show output frame(1/0)");
 	inputLCDPThreshold = read_double_input("LCDP Threshold");
 	saveResult = read_bool_input("Save output frame(1/0)");
 	evaluateResult = read_bool_input("Evaluate result(1/0)");
-
+	debugSwitch = read_bool_input("Debug Mode(1/0)");
+	if (debugSwitch) {
+		debugX = read_int_input("X-Point");
+		debugY = read_int_input("Y-Point");
+	}
 	// Input frame
 	cv::Mat inputFrame;
 	// FG Mask
@@ -66,15 +73,15 @@ int main() {
 	// RGB detection switch
 	bool RGBDiffSwitch = false;
 	// RGB differences threshold
-	size_t RGBThreshold = 10;
+	double RGBThreshold = 10;
 	// RGB bright pixel switch
 	bool RGBBrightPxSwitch = false;
 	// LCDP detection switch
 	bool LCDPDiffSwitch = true;
 	// LCDP differences threshold
-	size_t LCDPThreshold = inputLCDPThreshold;
+	double LCDPThreshold = inputLCDPThreshold;
 	// Maximum number of LCDP differences threshold
-	size_t LCDPMaxThreshold = 72;
+	double LCDPMaxThreshold = 0.7;
 	// LCDP detection AND (true) OR (false) switch
 	bool AndOrSwitch = true;
 	// Neighbourhood matching switch
@@ -93,6 +100,9 @@ int main() {
 		RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold,
 		AndOrSwitch, NbMatchSwitch, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch);
 
+	backgroundSubtractorLCDP.debugSwitch = debugSwitch;
+	
+	backgroundSubtractorLCDP.DebugPxLocation(debugX, debugY);
 	backgroundSubtractorLCDP.Initialize(inputFrame, inputFrame);
 
 	// current date/time based on current system
@@ -112,6 +122,7 @@ int main() {
 		_mkdir(s1);
 	}
 	char s[25];
+	videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
 	for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
 
 		//system("cls");
@@ -307,7 +318,34 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 	myfile << "TOTAL SHADOW: " << std::setprecision(0) << std::fixed << TotalShadow << std::endl;
 	myfile.close();
 }
+
 // Checking input value
+int read_int_input(std::string question)
+{
+	int input = -1;
+	bool valid = false;
+	do
+	{
+		std::cout << question << " :" << std::flush;
+		std::cin >> input;
+		if (std::cin.good())
+		{
+			//everything went well, we'll get out of the loop and return the value
+			valid = true;
+		}
+		else
+		{
+			//something went wrong, we reset the buffer's state to good
+			std::cin.clear();
+			//and empty it
+			std::cin.ignore();
+			std::cout << "Invalid input; please re-enter double value only." << std::endl;
+		}
+	} while (!valid);
+
+	return (input);
+}
+
 double read_double_input(std::string question)
 {
 	double input = -1;
@@ -333,6 +371,7 @@ double read_double_input(std::string question)
 
 	return (input);
 }
+
 bool read_bool_input(std::string question)
 {
 	int input = 3;
@@ -373,6 +412,7 @@ bool read_bool_input(std::string question)
 
 	return (result);
 }
+
 cv::VideoCapture read_video_input(std::string question, std::string *filename)
 {
 	cv::VideoCapture videoCapture;

@@ -22,14 +22,16 @@ void SaveParameter(std::string folderName);
 // Evaluate results
 void EvaluateResult(std::string filename, std::string folderName, std::string currFolderName);
 
+std::string version = "1.0";
 bool showInput;
 bool showOutput;
 bool saveResult;
 bool evaluateResult;
 bool debugSwitch;
 double inputLCDPThreshold;
+int inputFrameIndex = 0;
 int main() {
-
+	std::cout <<"Version: "<< version << std::endl;
 	std::string filename;
 	cv::VideoCapture videoCapture = read_video_input("Video folder", &filename);
 	int debugX = 0;
@@ -39,10 +41,23 @@ int main() {
 	inputLCDPThreshold = read_double_input("LCDP Threshold");
 	saveResult = read_bool_input("Save output frame(1/0)");
 	evaluateResult = read_bool_input("Evaluate result(1/0)");
+
+	/*filename = "bungalows";
+	cv::VideoCapture videoCapture = read_video_input("Video folder", &filename);
+	int debugX = 0;
+	int debugY = 0;
+	showInput = 1;
+	showOutput = 1;
+	inputLCDPThreshold = read_double_input("LCDP Threshold");
+	saveResult = 0;
+	evaluateResult = 0;*/
+
 	debugSwitch = read_bool_input("Debug Mode(1/0)");
 	if (debugSwitch) {
 		debugX = read_int_input("X-Point");
 		debugY = read_int_input("Y-Point");
+		inputFrameIndex = read_int_input("Frame Index (Start:0)");
+		debugSwitch = false;
 	}
 	// Input frame
 	cv::Mat inputFrame;
@@ -67,7 +82,7 @@ int main() {
 
 	// Define Threshold
 	// Total number of words per pixel
-	size_t wordsNo = 25;
+	size_t wordsNo = 35;
 
 	/*=====CLASSIFIER Parameters=====*/
 	// RGB detection switch
@@ -88,9 +103,9 @@ int main() {
 	bool NbMatchSwitch = true;
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
-	bool RandomReplaceSwitch = false;
+	bool RandomReplaceSwitch = true;
 	// Random update neighbourhood model switch
-	bool RandomUpdateNbSwitch = false;
+	bool RandomUpdateNbSwitch = true;
 	// Feedback loop switch
 	bool FeedbackSwitch = true;
 
@@ -124,7 +139,9 @@ int main() {
 	char s[25];
 	videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
 	for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
-
+		if (inputFrameIndex == currFrameIndex) {
+			backgroundSubtractorLCDP.debugSwitch = true;
+		}
 		//system("cls");
 		//std::cout << "Current process status: " << currFrameIndex << "/" << FRAME_COUNT << " (" << ((currFrameIndex / FRAME_COUNT) * 100) << "%)";
 		bool inputCheck = videoCapture.read(inputFrame);
@@ -228,6 +245,9 @@ const std::string currentDateTime(time_t * now) {
 void SaveParameter(std::string folderName) {
 	std::ofstream myfile;
 	myfile.open(folderName + "/parameter.txt", std::ios::app);
+	myfile << "----VERSION----\n";
+	myfile << version;
+	myfile << "\n";
 	myfile << "----MAIN PROCESS PARAMETER----\n";
 	myfile << "RESULT FOLDER: ";
 	myfile << folderName;

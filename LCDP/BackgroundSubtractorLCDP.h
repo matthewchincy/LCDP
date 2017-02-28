@@ -8,7 +8,6 @@
 class BackgroundSubtractorLCDP {
 public:
 	/*******CONSTRUCTOR*******/
-	BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo);
 	BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo, bool inputRGBDiffSwitch,
 		double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, double inputLCDPThreshold,
 		double inputLCDPMaxThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch, bool inputRandomReplaceSwitch, 
@@ -200,10 +199,8 @@ protected:
 	cv::Mat resVariationModulator;
 	// Per-pixel blink detection map ('Z(x)')
 	cv::Mat resBlinksFrame;
-	// Minimum RGB distance
-	cv::Mat resMinRGBDistance;
-	// Minimum LCD distance
-	cv::Mat resMinLCDPDistance;
+	// Minimum match distance
+	cv::Mat resMinMatchDistance;
 	// Current foreground mask
 	cv::Mat resCurrFGMask;
 	// Previous foreground mask
@@ -252,7 +249,8 @@ protected:
 
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match)
-	bool DescriptorMatching(DescriptorStruct *pxWordPtr, DescriptorStruct *currPxWordPtr, const size_t pxPointer, const double LCDPThreshold, const double RGBThreshold, float &minRGBDistance, float &minLCDPDistance);
+	bool DescriptorMatching(DescriptorStruct *pxWordPtr, DescriptorStruct *currPxWordPtr, const size_t pxPointer,
+		const double LCDPThreshold, const double RGBThreshold, float &tempMatchDistance);
 	// LCD Matching (RETURN-True:Not match, False: Match)
 	bool LCDPMatching(DescriptorStruct *bgWord, DescriptorStruct *currWord, const size_t pxPointer, const double LCDPThreshold, float &minDistance);
 	// RGB Matching (RETURN-True:Not match, False: Match)

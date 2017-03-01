@@ -1,0 +1,82 @@
+// Border line reconstruct
+cv::Mat BackgroundSubtractorLCDP::BorderLineReconst(const cv::Mat inputMask)
+{
+	cv::Mat reconstructResult;
+	reconstructResult.create(frameSize, CV_8UC1);
+	reconstructResult = cv::Scalar_<uchar>(0);
+	const size_t maxHeight = frameSize.height - 1;
+	const size_t maxWidth = frameSize.width - 1;
+	const size_t maxLineHeight = maxHeight*0.4;
+	const size_t maxLineWidth = maxWidth*0.4;
+	const size_t startIndexList_Y[4] = { 0,0,0,maxHeight };
+	const size_t endIndexList_Y[4] = { 0,maxHeight,maxHeight,maxHeight };
+	const size_t startIndexList_X[4] = { 0,0,maxWidth,0 };
+	const size_t endIndexList_X[4] = { maxWidth,0,maxWidth,maxWidth };
+	for (int line = 0;line < 4;line++) {
+		uchar previousIndex = 0;
+		size_t previousIndex_Y_start = startIndexList_Y[line];
+		size_t previousIndex_Y_end = startIndexList_Y[line];
+		size_t previousIndex_X_start = startIndexList_X[line];
+		size_t previousIndex_X_end = startIndexList_X[line];
+		bool previous = false;
+		bool completeLine = false;
+		for (int rowIndex = startIndexList_Y[line];rowIndex <= endIndexList_Y[line];rowIndex++) {
+				for (int colIndex = startIndexList_X[line];colIndex <= endIndexList_X[line];colIndex++) {
+					size_t pxPointer = (rowIndex*frameSize.width) + colIndex;
+					const uchar currFGMask = *(resCurrFGMask.data + pxPointer);
+
+					if ((currFGMask != previousIndex) && (currFGMask == 255)) {
+						if (!previous) {
+							previous = true;
+							previousIndex = 255;
+							if (((previousIndex_Y_start < previousIndex_Y_end) || (previousIndex_X_start < previousIndex_X_end)) && completeLine) {
+								for (int recRowIndex = previousIndex_Y_start;recRowIndex <= previousIndex_Y_end;recRowIndex++) {
+									for (int recColIndex = previousIndex_X_start;recColIndex <= previousIndex_X_end;recColIndex++) {
+										size_t upPxPointer = (recRowIndex*frameSize.width) + recColIndex;
+										*(reconstructResult.data + upPxPointer) = 255;
+									}
+								}
+								previousIndex_Y_end = rowIndex;
+								previousIndex_X_end = colIndex;
+								completeLine = false;
+							}
+						}
+						previousIndex_Y_start = rowIndex;
+						previousIndex_X_start = colIndex;
+					}
+					else if ((currFGMask != previousIndex) && currFGMask == 0) {
+						if (previous) {
+							previous = false;
+							previousIndex = 0;
+							completeLine = true;
+						}
+						previousIndex_Y_end = rowIndex;
+						previousIndex_X_end = colIndex;
+					}
+					else if (currFGMask == 255) {
+						if (previous) {
+							previousIndex_Y_start = rowIndex;
+							previousIndex_X_start = colIndex;
+						}
+					}
+					else if (currFGMask == 0) {
+						if (!previous) {
+							size_t ybalance = previousIndex_Y_end - previousIndex_Y_start;
+							size_t xbalance = previousIndex_X_end - previousIndex_X_start;
+							if (ybalance > (maxLineHeight)) {
+								previousIndex_Y_start = rowIndex;
+								previousIndex_X_start = colIndex;
+							}
+							else if (xbalance > (maxLineWidth)) {
+								previousIndex_Y_start = rowIndex;
+								previousIndex_X_start = colIndex;
+							}
+							previousIndex_Y_end = rowIndex;
+							previousIndex_X_end = colIndex;
+						}
+					}
+				}
+		}
+	}
+	return reconstructResult;
+}

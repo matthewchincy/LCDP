@@ -5,14 +5,19 @@
 #include <time.h>
 #include <fstream>
 #include <iomanip>
-#include<conio.h>
-#include<windows.h>
+#include <conio.h>
+#include <windows.h>
 
-// Checking input value
-int read_int_input(std::string question);
-double read_double_input(std::string question);
-bool read_bool_input(std::string question);
-cv::VideoCapture read_video_input(std::string question, std::string *filename);
+/****Read input methods****/
+// Read integer value input
+int readIntInput(std::string question);
+// Read double value input
+double readDoubleInput(std::string question);
+// Read boolean value input
+bool readBoolInput(std::string question);
+// Read video input
+cv::VideoCapture readVideoInput(std::string question, std::string *filename, 
+	double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE);
 // Get current date/time, format is DDMMYYHHmmss
 const std::string currentDateTimeStamp(time_t * now);
 // Get current date/time, format is DD-MM-YY HH:mm:ss
@@ -21,69 +26,88 @@ const std::string currentDateTime(time_t * now);
 void SaveParameter(std::string folderName);
 // Evaluate results
 void EvaluateResult(std::string filename, std::string folderName, std::string currFolderName);
+// Calculate processing time
+void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
-std::string version = "1.0";
-bool showInput;
-bool showOutput;
-bool saveResult;
-bool evaluateResult;
+/****Global variable declaration****/
+// Program version
+const std::string programVersion = "1-0";
+// Show input frame switch
+bool showInputSwitch;
+// Show output frame switch
+bool showOutputSwitch;
+// Save result switch
+bool saveResultSwitch;
+// Evaluate result switch
+bool evaluateResultSwitch;
+// Debug switch
 bool debugSwitch;
-double inputLCDPThreshold;
-int inputFrameIndex = 0;
+// Program start time
+time_t tempStartTime;
+// Program finish time
+time_t tempFinishTime;
 int main() {
-	std::cout <<"Version: "<< version << std::endl;
+	std::cout <<"Program Version: "<< programVersion << std::endl;
+	// Frames per second (FPS) of the input video
+	double FPS;
+	// Total number of frame of the input video
+	double FRAME_COUNT;
+	// Frame size of the input video
+	cv::Size FRAME_SIZE;
+
+	// Video file name
 	std::string filename;
-	cv::VideoCapture videoCapture = read_video_input("Video folder", &filename);
-	int debugX = 0;
-	int debugY = 0;
-	showInput = read_bool_input("Show input frame(1/0)");
-	showOutput = read_bool_input("Show output frame(1/0)");
-	inputLCDPThreshold = read_double_input("LCDP Threshold");
-	saveResult = read_bool_input("Save output frame(1/0)");
-	evaluateResult = read_bool_input("Evaluate result(1/0)");
+	// Read video input from user
+	cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT,&FRAME_SIZE);
+	// Show input frame switch
+	showInputSwitch = readBoolInput("Show input frame(1/0)");
+	// Show output frame switch
+	showOutputSwitch = readBoolInput("Show output frame(1/0)");
+	// Save result switch
+	saveResultSwitch = readBoolInput("Save result(1/0)");
+	// Evaluate result switch
+	evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
+	// Debug switch
+	debugSwitch = readBoolInput("Debug Mode(1/0)");
 
-	/*filename = "bungalows";
-	cv::VideoCapture videoCapture = read_video_input("Video folder", &filename);
+	// Debug starting frame index
+	int debugFrameIndex = 0;
+	// Debug x-point
 	int debugX = 0;
+	// Debug y-point
 	int debugY = 0;
-	showInput = 1;
-	showOutput = 1;
-	inputLCDPThreshold = read_double_input("LCDP Threshold");
-	saveResult = 0;
-	evaluateResult = 0;*/
-
-	debugSwitch = read_bool_input("Debug Mode(1/0)");
 	if (debugSwitch) {
-		debugX = read_int_input("X-Point");
-		debugY = read_int_input("Y-Point");
-		inputFrameIndex = read_int_input("Frame Index (Start:0)");
-		debugSwitch = false;
+		// Read x-point for debug
+		debugX = readIntInput("X-Point");
+		// Read y-point for debug
+		debugY = readIntInput("Y-Point");
+		// Read starting frame index for debug
+		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
 	}
+
+	// Input LCDP threshold (0-1)
+	double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 	// Input frame
 	cv::Mat inputFrame;
-	// FG Mask
+	// Foreground Mask
 	cv::Mat fgMask;
-	videoCapture >> inputFrame;
-	// Getting frames per second (FPS) of the input video
-	const double FPS = videoCapture.get(cv::CAP_PROP_FPS);
-	const double FRAME_COUNT = videoCapture.get(cv::CAP_PROP_FRAME_COUNT);
-	const cv::Size FRAME_SIZE = cv::Size(videoCapture.get(cv::CAP_PROP_FRAME_WIDTH), videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT));
+
+	// Region of interest frame
 	cv::Mat ROI_FRAME;
 	ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
 	ROI_FRAME = cv::Scalar_<uchar>(255);
-	if (showInput) {
+	if (showInputSwitch) {
 		// Display input video windows
 		cv::namedWindow("Input Video");
 	}
-	if (showOutput) {
+	if (showOutputSwitch) {
 		// Display results windows
 		cv::namedWindow("Results");
 	}
-
-	// Define Threshold
+	
+	/****Define Threshold****/
 	// Total number of words per pixel
-	size_t wordsNo = 35;
-
+	size_t Words_No = 35;
 	/*=====CLASSIFIER Parameters=====*/
 	// RGB detection switch
 	bool RGBDiffSwitch = false;
@@ -108,26 +132,29 @@ int main() {
 	bool RandomUpdateNbSwitch = true;
 	// Feedback loop switch
 	bool FeedbackSwitch = true;
-
-	// Background Subtractor Initialize
-	//BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, wordsNo);
-	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, wordsNo, RGBDiffSwitch,
+	
+	// Declare background subtractor construtor
+	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, Words_No, RGBDiffSwitch,
 		RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold,
 		AndOrSwitch, NbMatchSwitch, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch);
 
-	backgroundSubtractorLCDP.debugSwitch = debugSwitch;
-	
-	backgroundSubtractorLCDP.DebugPxLocation(debugX, debugY);
-	backgroundSubtractorLCDP.Initialize(inputFrame, inputFrame);
+	// Read first frame from video
+	videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
+	videoCapture >> inputFrame;
 
-	// current date/time based on current system
-	time_t now = time(0);
-	//tm *ltm = localtime(&now);
-	std::string startTime = currentDateTimeStamp(&now);
-	std::string folderName = filename + "/LCD Sample Consensus-" + startTime;
+	// Initialize background subtractor
+	backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
+
+	// Current date/time based on current system
+	tempStartTime = time(0);
+	// Program start time
+	std::string startTime = currentDateTimeStamp(&tempStartTime);
+	// Current process result folder name
+	std::string folderName = filename + "/LCD Sample Consensus-" + programVersion + "-" + startTime;
 	const std::string currFolderName = folderName;
+
 	const char *s1;
-	if (saveResult) {
+	if (saveResultSwitch) {
 		s1 = folderName.c_str();
 		_mkdir(s1);
 		SaveParameter(folderName);
@@ -137,26 +164,24 @@ int main() {
 		_mkdir(s1);
 	}
 	char s[25];
-	videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
 	for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
-		if (inputFrameIndex == currFrameIndex) {
-			backgroundSubtractorLCDP.debugSwitch = true;
+		if (debugFrameIndex <= currFrameIndex) {
+			debugFrameIndex = FRAME_COUNT + 1;
+			if (debugSwitch) {
+				backgroundSubtractorLCDP.debugSwitch = true;
+				backgroundSubtractorLCDP.DebugPxLocation(debugX, debugY);
+			}
 		}
-		//system("cls");
-		//std::cout << "Current process status: " << currFrameIndex << "/" << FRAME_COUNT << " (" << ((currFrameIndex / FRAME_COUNT) * 100) << "%)";
-		bool inputCheck = videoCapture.read(inputFrame);
-		if (!inputCheck) {
-			std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
-			return -1;
-		}
+
+		// Process current frame
 		backgroundSubtractorLCDP.Process(inputFrame, fgMask);
-		if (showInput) {
+		if (showInputSwitch) {
 			cv::imshow("Input Video", inputFrame);
 		}
-		if (showOutput) {
+		if (showOutputSwitch) {
 			cv::imshow("Results", fgMask);
 		}
-		if (saveResult) {
+		if (saveResultSwitch) {
 			std::string saveFolder;
 			sprintf(s, "/bin%06d.png", (currFrameIndex));
 			saveFolder = folderName + s;
@@ -168,40 +193,20 @@ int main() {
 			std::cout << "Program ended by users." << std::endl;
 			break;
 		}
+		bool inputCheck = videoCapture.read(inputFrame);
+		if (!inputCheck) {
+			std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
+			return -1;
+		}
 	}
 
-	time_t finish = time(0);
-	double diffSeconds = difftime(finish, now);
-	int seconds, hours, minutes;
-	minutes = diffSeconds / 60;
-	hours = minutes / 60;
-	seconds = int(diffSeconds) % 60;
-	double fpsProcess = FRAME_COUNT / diffSeconds;
-	std::cout << "<<<<<-TOTAL PROGRAM TIME->>>>>\n" << "PROGRAM START TIME:" << currentDateTime(&now) << std::endl;
-	std::cout << "PROGRAM END  TIME:" << currentDateTime(&finish) << std::endl;
-	std::cout << "TOTAL SPEND TIME:" << hours << " H " << minutes << " M " << seconds << " S" << std::endl;
-	std::cout << "AVERAGE FPS:" << fpsProcess << std::endl;
-	if (saveResult) {
-		std::ofstream myfile;
-		myfile.open(currFolderName + "/parameter.txt", std::ios::app);
-		myfile << "\n\n<<<<<-TOTAL PROGRAM TIME->>>>>\n";
-		myfile << "PROGRAM START TIME:";
-		myfile << currentDateTime(&now);
-		myfile << "\n";
-		myfile << "PROGRAM END  TIME:";
-		myfile << currentDateTime(&finish);
-		myfile << "\n";
-		myfile << "TOTAL SPEND TIME:";
-		myfile << hours << " H " << minutes << " M " << seconds << " S";
-		myfile << "\n";
-		myfile << "AVERAGE FPS:";
-		myfile << fpsProcess;
-		myfile << "\n";
-		myfile.close();
-	}
+	tempFinishTime = time(0);
+	GenerateProcessTime(FRAME_COUNT, currFolderName);
+	
 	std::cout << "Background subtraction completed" << std::endl;
-	if (evaluateResult) {
-		if (saveResult) {
+
+	if (evaluateResultSwitch) {
+		if (saveResultSwitch) {
 
 			std::cout << "Now starting evaluate the processed result..." << std::endl;
 			EvaluateResult(filename, folderName, currFolderName);
@@ -246,7 +251,7 @@ void SaveParameter(std::string folderName) {
 	std::ofstream myfile;
 	myfile.open(folderName + "/parameter.txt", std::ios::app);
 	myfile << "----VERSION----\n";
-	myfile << version;
+	myfile << programVersion;
 	myfile << "\n";
 	myfile << "----MAIN PROCESS PARAMETER----\n";
 	myfile << "RESULT FOLDER: ";
@@ -254,7 +259,7 @@ void SaveParameter(std::string folderName) {
 	myfile << "\n";
 	myfile.close();
 }
-
+// Evaluate results
 void EvaluateResult(std::string filename, std::string folderName, std::string currFolderName) {
 	// A video folder should contain 2 folders['input', 'groundtruth']
 	//and the "temporalROI.txt" file to be valid.The choosen method will be 
@@ -338,9 +343,42 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 	myfile << "TOTAL SHADOW: " << std::setprecision(0) << std::fixed << TotalShadow << std::endl;
 	myfile.close();
 }
+// Calculate processing time
+void GenerateProcessTime(double FRAME_COUNT,std::string currFolderName) {
+	
+	double diffSeconds = difftime(tempFinishTime, tempStartTime);
+	int seconds, hours, minutes;
+	minutes = diffSeconds / 60;
+	hours = minutes / 60;
+	seconds = int(diffSeconds) % 60;
+	double fpsProcess = FRAME_COUNT / diffSeconds;
+	std::cout << "<<<<<-TOTAL PROGRAM TIME->>>>>\n" << "PROGRAM START TIME:" << currentDateTime(&tempStartTime) << std::endl;
+	std::cout << "PROGRAM END  TIME:" << currentDateTime(&tempFinishTime) << std::endl;
+	std::cout << "TOTAL SPEND TIME:" << hours << " H " << minutes << " M " << seconds << " S" << std::endl;
+	std::cout << "AVERAGE FPS:" << fpsProcess << std::endl;
+	if (saveResultSwitch) {
+		std::ofstream myfile;
+		myfile.open(currFolderName + "/parameter.txt", std::ios::app);
+		myfile << "\n\n<<<<<-TOTAL PROGRAM TIME->>>>>\n";
+		myfile << "PROGRAM START TIME:";
+		myfile << currentDateTime(&tempStartTime);
+		myfile << "\n";
+		myfile << "PROGRAM END  TIME:";
+		myfile << currentDateTime(&tempFinishTime);
+		myfile << "\n";
+		myfile << "TOTAL SPEND TIME:";
+		myfile << hours << " H " << minutes << " M " << seconds << " S";
+		myfile << "\n";
+		myfile << "AVERAGE FPS:";
+		myfile << fpsProcess;
+		myfile << "\n";
+		myfile.close();
+	}
+}
 
-// Checking input value
-int read_int_input(std::string question)
+/****Read input methods****/
+// Read integer value input
+int readIntInput(std::string question)
 {
 	int input = -1;
 	bool valid = false;
@@ -350,14 +388,11 @@ int read_int_input(std::string question)
 		std::cin >> input;
 		if (std::cin.good())
 		{
-			//everything went well, we'll get out of the loop and return the value
 			valid = true;
 		}
 		else
 		{
-			//something went wrong, we reset the buffer's state to good
 			std::cin.clear();
-			//and empty it
 			std::cin.ignore();
 			std::cout << "Invalid input; please re-enter double value only." << std::endl;
 		}
@@ -365,8 +400,8 @@ int read_int_input(std::string question)
 
 	return (input);
 }
-
-double read_double_input(std::string question)
+// Read double value input
+double readDoubleInput(std::string question)
 {
 	double input = -1;
 	bool valid = false;
@@ -376,14 +411,11 @@ double read_double_input(std::string question)
 		std::cin >> input;
 		if (std::cin.good())
 		{
-			//everything went well, we'll get out of the loop and return the value
 			valid = true;
 		}
 		else
 		{
-			//something went wrong, we reset the buffer's state to good
 			std::cin.clear();
-			//and empty it
 			std::cin.ignore();
 			std::cout << "Invalid input; please re-enter double value only." << std::endl;
 		}
@@ -391,8 +423,8 @@ double read_double_input(std::string question)
 
 	return (input);
 }
-
-bool read_bool_input(std::string question)
+// Read boolean value input
+bool readBoolInput(std::string question)
 {
 	int input = 3;
 	bool valid = false;
@@ -411,20 +443,15 @@ bool read_bool_input(std::string question)
 				valid = true;
 				break;
 			default:
-				//something went wrong, we reset the buffer's state to good
 				std::cin.clear();
-				//and empty it
 				std::cin.ignore(true, '\n');
 				std::cout << "Invalid input; please re-enter boolean (0/1) only." << std::endl;
 				break;
 			}
-			//everything went well, we'll get out of the loop and return the value
 		}
 		else
 		{
-			//something went wrong, we reset the buffer's state to good
 			std::cin.clear();
-			//and empty it
 			std::cin.ignore(true, '\n');
 			std::cout << "Invalid input; please re-enter boolean (0/1) only." << std::endl;
 		}
@@ -432,9 +459,11 @@ bool read_bool_input(std::string question)
 
 	return (result);
 }
-
-cv::VideoCapture read_video_input(std::string question, std::string *filename)
+// Read video input
+cv::VideoCapture readVideoInput(std::string question, std::string *filename,double *FPS,
+	double *FRAME_COUNT,cv::Size *FRAME_SIZE )
 {
+	// Video capture variable
 	cv::VideoCapture videoCapture;
 	std::string videoName;
 
@@ -469,6 +498,12 @@ cv::VideoCapture read_video_input(std::string question, std::string *filename)
 		if (check) {
 			std::cout << "Video successful loaded!" << std::endl;
 			valid = true;
+			// Getting frames per second (FPS) of the input video
+			(*FPS) = videoCapture.get(cv::CAP_PROP_FPS);
+			// Getting total number of frame of the input video
+			(*FRAME_COUNT) = videoCapture.get(cv::CAP_PROP_FRAME_COUNT);
+			// Getting size of the input video
+			(*FRAME_SIZE) = cv::Size(videoCapture.get(cv::CAP_PROP_FRAME_WIDTH), videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT));
 			videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
 			break;
 		}

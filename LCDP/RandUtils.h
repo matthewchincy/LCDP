@@ -92,26 +92,31 @@ static inline void getRandNeighborPosition_3x3(int& x_neighbor, int& y_neighbor,
 }
 
 // 5x5 neighbors pattern
+static const int s_nSamplesInitPatternWidth_5 = 5;
+static const int s_nSamplesInitPatternHeight_5 = 5;
 static const int s_anNeighborPatternSize_5x5 = 24;
 static const int s_anNeighborPattern_5x5[24][2] = {
-    {-2, 2},  {-1, 2},  { 0, 2},  { 1, 2},  { 2, 2},
-    {-2, 1},  {-1, 1},  { 0, 1},  { 1, 1},  { 2, 1},
-    {-2, 0},  {-1, 0},            { 1, 0},  { 2, 0},
-    {-2,-1},  {-1,-1},  { 0,-1},  { 1,-1},  { 2,-1},
-    {-2,-2},  {-1,-2},  { 0,-2},  { 1,-2},  { 2,-2},
+	{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0},
+	{0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 1},
+	{0, 2}, {1, 2},         {3, 2}, {4, 2},
+	{0, 3}, {1, 3}, {2, 3}, {3, 3}, {4, 3},
+	{0, 4}, {1, 4}, {2, 4}, {3, 4}, {4, 4},
 };
 
 //! returns a random neighbor position for the specified pixel position; also guards against out-of-bounds values via image/border size check.
-static inline void getRandNeighborPosition_5x5(int& x_neighbor, int& y_neighbor, const int x_orig, const int y_orig, const int border, const cv::Size& imgsize) {
-    int r = rand()%s_anNeighborPatternSize_5x5;
-    x_neighbor = x_orig+s_anNeighborPattern_5x5[r][0];
-    y_neighbor = y_orig+s_anNeighborPattern_5x5[r][1];
-    if(x_neighbor<border)
-        x_neighbor = border;
-    else if(x_neighbor>=imgsize.width-border)
-        x_neighbor = imgsize.width-border-1;
-    if(y_neighbor<border)
-        y_neighbor = border;
-    else if(y_neighbor>=imgsize.height-border)
-        y_neighbor = imgsize.height-border-1;
+static inline void 	getRandSamplePosition_5x5(cv::Point & sampleCoor, const cv::Point currCoor, const int border, const cv::Size& imgsize) {
+	int r = rand()%s_anNeighborPatternSize_5x5;
+	sampleCoor.x = s_anNeighborPattern_5x5[r][0];
+	sampleCoor.y = s_anNeighborPattern_5x5[r][1];
+
+	sampleCoor.x += currCoor.x - s_nSamplesInitPatternWidth_3 / 2;
+	sampleCoor.y += currCoor.y - s_nSamplesInitPatternHeight_3 / 2;
+	if (sampleCoor.x<border)
+		sampleCoor.x = border;
+	else if (sampleCoor.x >= imgsize.width - border)
+		sampleCoor.x = imgsize.width - border - 1;
+	if (sampleCoor.y<border)
+		sampleCoor.y = border;
+	else if (sampleCoor.y >= imgsize.height - border)
+		sampleCoor.y = imgsize.height - border - 1;
 }

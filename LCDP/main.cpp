@@ -204,7 +204,7 @@ int main() {
 			_mkdir(s1);
 		}
 		char s[25];
-		for (int currFrameIndex = 1;currFrameIndex < FRAME_COUNT;currFrameIndex++) {
+		for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
 			if (debugFrameIndex <= currFrameIndex) {
 				debugFrameIndex = FRAME_COUNT + 1;
 				if (debugSwitch) {
@@ -234,7 +234,7 @@ int main() {
 				break;
 			}
 			bool inputCheck = videoCapture.read(inputFrame);
-			if (!inputCheck) {
+			if (!inputCheck&&(currFrameIndex == FRAME_COUNT)) {
 				std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
 				return -1;
 			}

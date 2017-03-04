@@ -570,7 +570,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	cv::Mat compensationResult;
 
 	// POST PROCESSING
-	//resCurrFGMask.copyTo(outputImg);
+	resCurrFGMask.copyTo(outputImg);
 	resCurrFGMask.copyTo(resLastRawFGMask);
 	cv::Mat element = cv::getStructuringElement(0, cv::Size(5, 5));
 	cv::Mat element2 = cv::getStructuringElement(cv::MORPH_RECT,
@@ -603,7 +603,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	resLastFGMask.copyTo(resCurrFGMask);
 	resT_1FGMask.copyTo(resT_2FGMask);
 	resLastFGMask.copyTo(resT_1FGMask);
-	resCurrFGMask.copyTo(outputImg);
+	//resCurrFGMask.copyTo(outputImg);
 
 	// Frame Index
 	frameIndex++;

@@ -36,15 +36,15 @@ protected:
 	// Descriptor structure - Checked
 	struct DescriptorStruct {
 		// Store the pixel's RGB values
-		unsigned rgb[3];
+		int rgb[3];
 		// Store the number of frames that having same descriptor
-		unsigned frameCount;
+		int frameCount;
 		// Store the frame index of the first occurences/initial of this descriptor
-		unsigned p;
+		int p;
 		// Store the frame index of the last occurences of this descriptor
-		unsigned q;
+		int q;
 		// Store the pixel's LCDP values
-		unsigned LCDP[16];
+		int LCDP[16];
 	};
 
 	// Pixel info structure - Checked
@@ -188,6 +188,10 @@ protected:
 	cv::Mat resFGMaskPreFlood;
 	// Current pixel distance
 	cv::Mat resCurrPxDistance;
+	// Dark Pixel
+	cv::Mat resDarkPixel;
+	// Last image frame
+	cv::Mat resLastImg;
 
 	/*=====METHODS=====*/
 	/*=====DEFAULT methods=====*/
@@ -211,20 +215,23 @@ protected:
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match) - checked
 	bool DescriptorMatching(DescriptorStruct *pxWordPtr, DescriptorStruct *currPxWordPtr, const size_t pxPointer,
-		const double LCDPThreshold, const double RGBThreshold, float &tempMatchDistance);
+		const double LCDPThreshold, const double RGBThreshold, float &tempMatchDistance, bool &rgbMatchPixel, bool &darkPixel);
 	// LCD Matching (RETURN-True:Not match, False: Match) - checked
 	bool LCDPMatching(DescriptorStruct *bgWord, DescriptorStruct *currWord, const size_t pxPointer, const double LCDPThreshold, float &minDistance);
 	// RGB Matching (RETURN-True:Not match, False: Match) - checked
-	bool RGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double RGBThreshold, float &minDistance);
+	bool RGBMatching(const int bgRGB[], const int currRGB[], const double RGBThreshold, float &minDistance);
 	// Bright Pixel (RETURN-True:Not match, False: Match) - checked
-	bool BrightRGBMatching(const unsigned bgRGB[], const unsigned currRGB[], const double BrightThreshold);
+	bool BrightRGBMatching(const int bgRGB[], const int currRGB[], const double BrightThreshold);
 
 	/*=====POST-PROCESSING Methods=====*/
 	// Compensation with Motion Hist - checked
 	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const cv::Mat postCompensationThreshold);
 	// Contour filling the empty holes - checked
 	cv::Mat ContourFill(const cv::Mat inputImg);
-	
+	cv::Mat BorderLineReconst(const cv::Mat inputMask);
+	// Dark Pixel generator
+	cv::Mat DarkPixelGenerator(const cv::Mat inputImg);
+
 	/*=====DEBUG=====*/
 	cv::Point debPxLocation;
 	size_t debPxPointer;

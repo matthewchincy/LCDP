@@ -18,6 +18,8 @@ bool readBoolInput(std::string question);
 // Read video input
 cv::VideoCapture readVideoInput(std::string question, std::string *filename, 
 	double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE);
+cv::VideoCapture readVideoInput2(std::string question, std::string *filename, double *FPS,
+	double *FRAME_COUNT, cv::Size *FRAME_SIZE);
 // Get current date/time, format is DDMMYYHHmmss
 const std::string currentDateTimeStamp(time_t * now);
 // Get current date/time, format is DD-MM-YY HH:mm:ss
@@ -54,165 +56,203 @@ int main() {
 	double FRAME_COUNT;
 	// Frame size of the input video
 	cv::Size FRAME_SIZE;
-
-	// Video file name
-	std::string filename;
-	// Read video input from user
-	cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT,&FRAME_SIZE);
-	// Show input frame switch
-	showInputSwitch = readBoolInput("Show input frame(1/0)");
-	// Show output frame switch
-	showOutputSwitch = readBoolInput("Show output frame(1/0)");
-	// Save result switch
-	saveResultSwitch = readBoolInput("Save result(1/0)");
-	// Evaluate result switch
-	evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
-	// Debug switch
-	debugSwitch = readBoolInput("Debug Mode(1/0)");
-
-	// Debug starting frame index
-	int debugFrameIndex = 0;
-	// Debug x-point
-	int debugX = 0;
-	// Debug y-point
-	int debugY = 0;
-	if (debugSwitch) {
-		// Read x-point for debug
-		debugX = readIntInput("X-Point");
-		// Read y-point for debug
-		debugY = readIntInput("Y-Point");
-		// Read starting frame index for debug
-		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
-	}
-
 	// Input LCDP threshold (0-1)
 	double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
-	// Input frame
-	cv::Mat inputFrame;
-	// Foreground Mask
-	cv::Mat fgMask;
+	for (size_t datasetIndex = 0;datasetIndex < 8;datasetIndex++) {
+		// Video file name
+		std::string filename;
+		switch (datasetIndex) {
+			case 0: filename = "bungalows";
+				break;
+			case 1: filename = "canoe";
+				break;
+			case 2:filename = "fall";
+				break;
+			case 3:filename = "cubicle";
+				break;
+			case 4: filename = "traffic";
+				break;
+			case 5:filename = "sofa";
+				break;
+			case 6: filename = "boats";
+				break;
+			case 7: filename = "fountain01";
+				break;
+			default:
+				std::cout << "Error occurs!";
+				break;
+		}
+		//// Read video input from user
+		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		//// Show input frame switch
+		//showInputSwitch = readBoolInput("Show input frame(1/0)");
+		//// Show output frame switch
+		//showOutputSwitch = readBoolInput("Show output frame(1/0)");
+		//// Save result switch
+		//saveResultSwitch = readBoolInput("Save result(1/0)");
+		//// Evaluate result switch
+		//evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
+		//// Debug switch
+		//debugSwitch = readBoolInput("Debug Mode(1/0)");
 
-	// Region of interest frame
-	cv::Mat ROI_FRAME;
-	ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
-	ROI_FRAME = cv::Scalar_<uchar>(255);
-	if (showInputSwitch) {
-		// Display input video windows
-		cv::namedWindow("Input Video");
-	}
-	if (showOutputSwitch) {
-		// Display results windows
-		cv::namedWindow("Results");
-	}
-	
-	/****Define Threshold****/
-	// Total number of words per pixel
-	size_t Words_No = 35;
-	/*=====CLASSIFIER Parameters=====*/
-	// RGB detection switch
-	bool RGBDiffSwitch = false;
-	// RGB differences threshold
-	double RGBThreshold = 10;
-	// RGB bright pixel switch
-	bool RGBBrightPxSwitch = false;
-	// LCDP detection switch
-	bool LCDPDiffSwitch = true;
-	// LCDP differences threshold
-	double LCDPThreshold = inputLCDPThreshold;
-	// Maximum number of LCDP differences threshold
-	double LCDPMaxThreshold = 0.7;
-	// LCDP detection AND (true) OR (false) switch
-	bool AndOrSwitch = true;
-	// Neighbourhood matching switch
-	bool NbMatchSwitch = true;
-	/*=====UPDATE Parameters=====*/
-	// Random replace model switch
-	bool RandomReplaceSwitch = true;
-	// Random update neighbourhood model switch
-	bool RandomUpdateNbSwitch = true;
-	// Feedback loop switch
-	bool FeedbackSwitch = true;
-	
-	// Declare background subtractor construtor
-	BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, Words_No, RGBDiffSwitch,
-		RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold,
-		AndOrSwitch, NbMatchSwitch, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch);
+		// Read video input from user
+		cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		// Show input frame switch
+		showInputSwitch = false;
+		// Show output frame switch
+		showOutputSwitch = false;
+		// Save result switch
+		saveResultSwitch = true;
+		// Evaluate result switch
+		evaluateResultSwitch = true;
+		// Debug switch
+		debugSwitch = false;
+		
 
-	// Read first frame from video
-	videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
-	videoCapture >> inputFrame;
+		// Debug starting frame index
+		int debugFrameIndex = 0;
+		// Debug x-point
+		int debugX = 0;
+		// Debug y-point
+		int debugY = 0;
+		if (debugSwitch) {
+			// Read x-point for debug
+			debugX = readIntInput("X-Point");
+			// Read y-point for debug
+			debugY = readIntInput("Y-Point");
+			// Read starting frame index for debug
+			debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
+		}
 
-	// Initialize background subtractor
-	backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
+		//// Input LCDP threshold (0-1)
+		//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
+		// Input frame
+		cv::Mat inputFrame;
+		// Foreground Mask
+		cv::Mat fgMask;
 
-	// Current date/time based on current system
-	tempStartTime = time(0);
-	// Program start time
-	std::string startTime = currentDateTimeStamp(&tempStartTime);
-	// Current process result folder name
-	std::string folderName = filename + "/LCD Sample Consensus-" + programVersion + "-" + startTime;
-	const std::string currFolderName = folderName;
+		// Region of interest frame
+		cv::Mat ROI_FRAME;
+		ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
+		ROI_FRAME = cv::Scalar_<uchar>(255);
+		if (showInputSwitch) {
+			// Display input video windows
+			cv::namedWindow("Input Video");
+		}
+		if (showOutputSwitch) {
+			// Display results windows
+			cv::namedWindow("Results");
+		}
 
-	const char *s1;
-	if (saveResultSwitch) {
-		s1 = folderName.c_str();
-		_mkdir(s1);
-		SaveParameter(folderName);
-		backgroundSubtractorLCDP.SaveParameter(folderName);
-		folderName += "/results";
-		s1 = folderName.c_str();
-		_mkdir(s1);
-	}
-	char s[25];
-	for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
-		if (debugFrameIndex <= currFrameIndex) {
-			debugFrameIndex = FRAME_COUNT + 1;
-			if (debugSwitch) {
-				backgroundSubtractorLCDP.debugSwitch = true;
-				backgroundSubtractorLCDP.DebugPxLocation(debugX, debugY);
+		/****Define Threshold****/
+		// Total number of words per pixel
+		size_t Words_No = 35;
+		/*=====CLASSIFIER Parameters=====*/
+		// RGB detection switch
+		bool RGBDiffSwitch = false;
+		// RGB differences threshold
+		double RGBThreshold = 40;
+		// RGB bright pixel switch
+		bool RGBBrightPxSwitch = false;
+		// LCDP detection switch
+		bool LCDPDiffSwitch = true;
+		// LCDP differences threshold
+		double LCDPThreshold = inputLCDPThreshold;
+		// Maximum number of LCDP differences threshold
+		double LCDPMaxThreshold = 0.7;
+		// LCDP detection AND (true) OR (false) switch
+		bool AndOrSwitch = false;
+		// Neighbourhood matching switch
+		bool NbMatchSwitch = false;
+		/*=====UPDATE Parameters=====*/
+		// Random replace model switch
+		bool RandomReplaceSwitch = false;
+		// Random update neighbourhood model switch
+		bool RandomUpdateNbSwitch = false;
+		// Feedback loop switch
+		bool FeedbackSwitch = false;
+
+		// Declare background subtractor construtor
+		BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, Words_No, RGBDiffSwitch,
+			RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold,
+			AndOrSwitch, NbMatchSwitch, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch);
+
+		// Read first frame from video
+		videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
+		videoCapture >> inputFrame;
+
+		// Initialize background subtractor
+		backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
+
+		// Current date/time based on current system
+		tempStartTime = time(0);
+		// Program start time
+		std::string startTime = currentDateTimeStamp(&tempStartTime);
+		// Current process result folder name
+		std::string folderName = filename + "/LCD Sample Consensus-" + programVersion + "-" + startTime;
+		const std::string currFolderName = folderName;
+
+		const char *s1;
+		if (saveResultSwitch) {
+			s1 = folderName.c_str();
+			_mkdir(s1);
+			SaveParameter(folderName);
+			backgroundSubtractorLCDP.SaveParameter(folderName);
+			folderName += "/results";
+			s1 = folderName.c_str();
+			_mkdir(s1);
+		}
+		char s[25];
+		for (int currFrameIndex = 1;currFrameIndex < FRAME_COUNT;currFrameIndex++) {
+			if (debugFrameIndex <= currFrameIndex) {
+				debugFrameIndex = FRAME_COUNT + 1;
+				if (debugSwitch) {
+					backgroundSubtractorLCDP.debugSwitch = true;
+					backgroundSubtractorLCDP.DebugPxLocation(debugX, debugY);
+				}
+			}
+
+			// Process current frame
+			backgroundSubtractorLCDP.Process(inputFrame, fgMask);
+			if (showInputSwitch) {
+				cv::imshow("Input Video", inputFrame);
+			}
+			if (showOutputSwitch) {
+				cv::imshow("Results", fgMask);
+			}
+			if (saveResultSwitch) {
+				std::string saveFolder;
+				sprintf(s, "/bin%06d.png", (currFrameIndex));
+				saveFolder = folderName + s;
+				cv::imwrite(saveFolder, fgMask);
+			}
+			// If 'esc' key is pressed, break loop
+			if (cv::waitKey(1) == 27)
+			{
+				std::cout << "Program ended by users." << std::endl;
+				break;
+			}
+			bool inputCheck = videoCapture.read(inputFrame);
+			if (!inputCheck) {
+				std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
+				return -1;
 			}
 		}
 
-		// Process current frame
-		backgroundSubtractorLCDP.Process(inputFrame, fgMask);
-		if (showInputSwitch) {
-			cv::imshow("Input Video", inputFrame);
-		}
-		if (showOutputSwitch) {
-			cv::imshow("Results", fgMask);
-		}
-		if (saveResultSwitch) {
-			std::string saveFolder;
-			sprintf(s, "/bin%06d.png", (currFrameIndex));
-			saveFolder = folderName + s;
-			cv::imwrite(saveFolder, fgMask);
-		}
-		// If 'esc' key is pressed, break loop
-		if (cv::waitKey(1) == 27)
-		{
-			std::cout << "Program ended by users." << std::endl;
-			break;
-		}
-		bool inputCheck = videoCapture.read(inputFrame);
-		if (!inputCheck) {
-			std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
-			return -1;
-		}
-	}
+		tempFinishTime = time(0);
+		GenerateProcessTime(FRAME_COUNT, currFolderName);
 
-	tempFinishTime = time(0);
-	GenerateProcessTime(FRAME_COUNT, currFolderName);
-	
-	std::cout << "Background subtraction completed" << std::endl;
+		std::cout << "Background subtraction completed" << std::endl;
 
-	if (evaluateResultSwitch) {
-		if (saveResultSwitch) {
+		if (evaluateResultSwitch) {
+			if (saveResultSwitch) {
 
-			std::cout << "Now starting evaluate the processed result..." << std::endl;
-			EvaluateResult(filename, folderName, currFolderName);
-		}
-		else {
-			std::cout << "No saved results for evaluation" << std::endl;
+				std::cout << "Now starting evaluate the processed result..." << std::endl;
+				EvaluateResult(filename, folderName, currFolderName);
+			}
+			else {
+				std::cout << "No saved results for evaluation" << std::endl;
+			}
 		}
 	}
 	std::cout << "Program Completed!" << std::endl;
@@ -474,6 +514,62 @@ cv::VideoCapture readVideoInput(std::string question, std::string *filename,doub
 	{
 		std::cout << question << " :" << std::flush;
 		getline(std::cin, (*filename));
+		bool check = false;
+		for (size_t formatIndex = 0;formatIndex < 2;formatIndex++) {
+			switch (formatIndex) {
+			case 0:
+				videoName = (*filename) + "/" + (*filename) + ".avi";
+				break;
+			case 1:
+				videoName = (*filename) + "/" + (*filename) + ".mp4";
+				break;
+			}
+			videoCapture.open(videoName);
+			// Input frame
+			cv::Mat inputFrames;
+			videoCapture >> inputFrames;
+
+			// Checking video whether successful be opened
+			if (videoCapture.isOpened() && !inputFrames.empty()) {
+				check = true;
+				break;
+			}
+		}
+		if (check) {
+			std::cout << "Video successful loaded!" << std::endl;
+			valid = true;
+			// Getting frames per second (FPS) of the input video
+			(*FPS) = videoCapture.get(cv::CAP_PROP_FPS);
+			// Getting total number of frame of the input video
+			(*FRAME_COUNT) = videoCapture.get(cv::CAP_PROP_FRAME_COUNT);
+			// Getting size of the input video
+			(*FRAME_SIZE) = cv::Size(videoCapture.get(cv::CAP_PROP_FRAME_WIDTH), videoCapture.get(cv::CAP_PROP_FRAME_HEIGHT));
+			videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
+			break;
+		}
+		else {
+			std::cout << "\nVideo having problem. Cannot open the video file. Please re-enter valid filename" << std::endl;
+			std::cin.sync();
+		}
+	} while (!valid);
+
+	return (videoCapture);
+}
+// Read video input
+cv::VideoCapture readVideoInput2(std::string question, std::string *filename, double *FPS,
+	double *FRAME_COUNT, cv::Size *FRAME_SIZE)
+{
+	// Video capture variable
+	cv::VideoCapture videoCapture;
+	std::string videoName;
+
+	int input = 3;
+	bool valid = false;
+	bool result = false;
+	do
+	{
+		/*std::cout << question << " :" << std::flush;
+		getline(std::cin, (*filename));*/
 		bool check = false;
 		for (size_t formatIndex = 0;formatIndex < 2;formatIndex++) {
 			switch (formatIndex) {

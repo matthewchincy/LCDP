@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "4-0";
+const std::string programVersion = "2-0";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch

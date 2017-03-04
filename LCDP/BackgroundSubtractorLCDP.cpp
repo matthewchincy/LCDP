@@ -282,8 +282,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			// Start index of the model of the current pixel
 			const size_t startModelIndex = pxInfoLUTPtr[pxPointer].startModelIndex;
 			// LCD descriptor threshold
-			const double LCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, double((*distThreshold) / 9)));
-
+			//const double LCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, double((*distThreshold) / 9)));
+			const double LCDPThreshold = clsLCDPMaxThreshold;
 			// RGB descriptor threshold
 			const double RGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*distThreshold)));
 			// Current pixel's foreground mask
@@ -570,7 +570,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	cv::Mat compensationResult;
 
 	// POST PROCESSING
-	resCurrFGMask.copyTo(outputImg);
+	//resCurrFGMask.copyTo(outputImg);
 	resCurrFGMask.copyTo(resLastRawFGMask);
 	cv::Mat element = cv::getStructuringElement(0, cv::Size(5, 5));
 	cv::Mat element2 = cv::getStructuringElement(cv::MORPH_RECT,
@@ -603,7 +603,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	resLastFGMask.copyTo(resCurrFGMask);
 	resT_1FGMask.copyTo(resT_2FGMask);
 	resLastFGMask.copyTo(resT_1FGMask);
-	//resCurrFGMask.copyTo(outputImg);
+	resCurrFGMask.copyTo(outputImg);
 
 	// Frame Index
 	frameIndex++;

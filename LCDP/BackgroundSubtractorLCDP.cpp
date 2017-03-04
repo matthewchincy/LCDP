@@ -282,8 +282,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			// Start index of the model of the current pixel
 			const size_t startModelIndex = pxInfoLUTPtr[pxPointer].startModelIndex;
 			// LCD descriptor threshold
-			const double LCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, double((*distThreshold) / 9)));
-			//const double LCDPThreshold = clsLCDPThreshold;
+			//const double LCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, double((*distThreshold) / 9)));
+			const double LCDPThreshold = clsLCDPThreshold;
 			// RGB descriptor threshold
 			const double RGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*distThreshold)));
 			// Current pixel's foreground mask

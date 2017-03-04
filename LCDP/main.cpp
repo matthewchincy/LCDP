@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "1-0";
+const std::string programVersion = "3-0";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -82,6 +82,7 @@ int main() {
 				std::cout << "Error occurs!";
 				break;
 		}
+		std::cout << "Now load dataset: " << filename << std::endl;
 		//// Read video input from user
 		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
 		//// Show input frame switch
@@ -163,7 +164,7 @@ int main() {
 		// LCDP detection AND (true) OR (false) switch
 		bool AndOrSwitch = false;
 		// Neighbourhood matching switch
-		bool NbMatchSwitch = false;
+		bool NbMatchSwitch = true;
 		/*=====UPDATE Parameters=====*/
 		// Random replace model switch
 		bool RandomReplaceSwitch = false;

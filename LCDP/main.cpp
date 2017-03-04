@@ -234,7 +234,7 @@ int main() {
 				break;
 			}
 			bool inputCheck = videoCapture.read(inputFrame);
-			if (!inputCheck&&(currFrameIndex == FRAME_COUNT)) {
+			if (!inputCheck&&(currFrameIndex < FRAME_COUNT)) {
 				std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
 				return -1;
 			}

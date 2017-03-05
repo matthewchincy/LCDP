@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "6-0";
+const std::string programVersion = "8-0";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -164,7 +164,7 @@ int main() {
 		// LCDP detection AND (true) OR (false) switch
 		bool AndOrSwitch = false;
 		// Neighbourhood matching switch
-		bool NbMatchSwitch = false;
+		bool NbMatchSwitch = true;
 		/*=====UPDATE Parameters=====*/
 		// Random replace model switch
 		bool RandomReplaceSwitch = false;

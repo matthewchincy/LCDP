@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "5-0";
+const std::string programVersion = "7-0";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -171,7 +171,7 @@ int main() {
 		// Random update neighbourhood model switch
 		bool RandomUpdateNbSwitch = false;
 		// Feedback loop switch
-		bool FeedbackSwitch = false;
+		bool FeedbackSwitch = true;
 
 		// Declare background subtractor construtor
 		BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, Words_No, RGBDiffSwitch,

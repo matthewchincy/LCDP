@@ -579,20 +579,26 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::Size(2 * 5 + 1, 2 * 5 + 1));
 	cv::Mat element4 = cv::getStructuringElement(cv::MORPH_RECT,
 		cv::Size(1,2 * 4 + 1));
+	// 1st round
+
+	// 2nd round
+
 	cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element2);
-	cv::threshold(gradientResult, gradientResult, 128, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+	cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
 	resDarkPixel = DarkPixelGenerator(inputImg);
-	cv::morphologyEx(resDarkPixel, resDarkPixel, cv::MORPH_DILATE, element);
 	//cv::bitwise_not(resDarkPixel, resDarkPixel);
-	//cv::bitwise_and(resDarkPixel, gradientResult, gradientResult);
+	cv::morphologyEx(resDarkPixel, resDarkPixel, cv::MORPH_DILATE, element);
+	
+	cv::bitwise_and(resDarkPixel, gradientResult, gradientResult);
 	cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_DILATE, element3);
 	cv::bitwise_not(gradientResult, gradientResult);
-	//cv::bitwise_and(resCurrFGMask, gradientResult, resCurrFGMask);
+	cv::bitwise_and(resCurrFGMask, gradientResult, resCurrFGMask);
+	// Add dilate
 	cv::Mat reconstructLine = BorderLineReconst(resCurrFGMask);
 	compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
 	cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_CLOSE, element);
 	resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
-	//cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
+	cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
 	resFGMaskFloodedHoles = ContourFill(resFGMaskFloodedHoles);
 	cv::erode(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
 	cv::bitwise_or(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
@@ -600,6 +606,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	cv::bitwise_or(resCurrFGMask, compensationResult, resCurrFGMask);
 		
 	cv::medianBlur(resCurrFGMask, resLastFGMask, postMedianFilterSize);
+	resLastFGMask = ContourFill(resLastFGMask);
 	resLastFGMask.copyTo(resCurrFGMask);
 	resT_1FGMask.copyTo(resT_2FGMask);
 	resLastFGMask.copyTo(resT_1FGMask);
@@ -610,7 +617,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	// Reset minimum matching distance
 	resMinMatchDistance = cv::Scalar(1.0f);
 	resDarkPixel = cv::Scalar_<uchar>::all(0);
-	inputImg.copyTo(resLastImg);
+	resLastImg = (inputImg + (resLastImg*(frameIndex - 1))) / frameIndex;
+	//inputImg.copyTo(resLastImg);
 }
 
 /*=====METHODS=====*/
@@ -1023,12 +1031,12 @@ cv::Mat BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat inputImg) {
 			for (int channel = 0;channel < 3;channel++) {
 				currRgb[channel] = inputImg.data[(pxPointer * 3) + channel];
 				lastRgb[channel] = resLastImg.data[(pxPointer * 3) + channel];
-				if (double(lastRgb[channel] - currRgb[channel]) > (-30)) {
+				if (double(lastRgb[channel] - currRgb[channel]) < (70)) {
 					result = true;
 				}
-				if (std::abs(double(lastRgb[channel] - currRgb[channel])) >10) {
+				/*if (std::abs(double(lastRgb[channel] - currRgb[channel])) <10) {
 					result = true;
-				}
+				}*/
 			}
 			float distanceDump;
 			bool RGBMatch = !RGBMatching(lastRgb, currRgb, 10, distanceDump);

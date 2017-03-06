@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "8-0";
+const std::string programVersion = "10-0";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -58,56 +58,56 @@ int main() {
 	cv::Size FRAME_SIZE;
 	// Input LCDP threshold (0-1)
 	double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
-	for (size_t datasetIndex = 0;datasetIndex < 8;datasetIndex++) {
-		// Video file name
+	//for (size_t datasetIndex = 0;datasetIndex < 8;datasetIndex++) {
+	//	// Video file name
 		std::string filename;
-		switch (datasetIndex) {
-			case 0: filename = "bungalows";
-				break;
-			case 1: filename = "canoe";
-				break;
-			case 2:filename = "fall";
-				break;
-			case 3:filename = "cubicle";
-				break;
-			case 4: filename = "traffic";
-				break;
-			case 5:filename = "sofa";
-				break;
-			case 6: filename = "boats";
-				break;
-			case 7: filename = "fountain01";
-				break;
-			default:
-				std::cout << "Error occurs!";
-				break;
-		}
-		std::cout << "Now load dataset: " << filename << std::endl;
-		//// Read video input from user
-		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-		//// Show input frame switch
-		//showInputSwitch = readBoolInput("Show input frame(1/0)");
-		//// Show output frame switch
-		//showOutputSwitch = readBoolInput("Show output frame(1/0)");
-		//// Save result switch
-		//saveResultSwitch = readBoolInput("Save result(1/0)");
-		//// Evaluate result switch
-		//evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
-		//// Debug switch
-		//debugSwitch = readBoolInput("Debug Mode(1/0)");
-
+	//	switch (datasetIndex) {
+	//		case 0: filename = "bungalows";
+	//			break;
+	//		case 1: filename = "canoe";
+	//			break;
+	//		case 2:filename = "fall";
+	//			break;
+	//		case 3:filename = "cubicle";
+	//			break;
+	//		case 4: filename = "traffic";
+	//			break;
+	//		case 5:filename = "sofa";
+	//			break;
+	//		case 6: filename = "boats";
+	//			break;
+	//		case 7: filename = "fountain01";
+	//			break;
+	//		default:
+	//			std::cout << "Error occurs!";
+	//			break;
+	//	}
+	//	std::cout << "Now load dataset: " << filename << std::endl;
 		// Read video input from user
-		cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
 		// Show input frame switch
-		showInputSwitch = false;
+		showInputSwitch = readBoolInput("Show input frame(1/0)");
 		// Show output frame switch
-		showOutputSwitch = false;
+		showOutputSwitch = readBoolInput("Show output frame(1/0)");
 		// Save result switch
-		saveResultSwitch = true;
+		saveResultSwitch = readBoolInput("Save result(1/0)");
 		// Evaluate result switch
-		evaluateResultSwitch = true;
+		evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
 		// Debug switch
-		debugSwitch = false;
+		debugSwitch = readBoolInput("Debug Mode(1/0)");
+
+		//// Read video input from user
+		//cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		//// Show input frame switch
+		//showInputSwitch = false;
+		//// Show output frame switch
+		//showOutputSwitch = false;
+		//// Save result switch
+		//saveResultSwitch = true;
+		//// Evaluate result switch
+		//evaluateResultSwitch = true;
+		//// Debug switch
+		//debugSwitch = false;
 		
 
 		// Debug starting frame index
@@ -255,7 +255,7 @@ int main() {
 				std::cout << "No saved results for evaluation" << std::endl;
 			}
 		}
-	}
+	//}
 	std::cout << "Program Completed!" << std::endl;
 	Beep(1568, 200);
 	Beep(1568, 200);
@@ -513,6 +513,8 @@ cv::VideoCapture readVideoInput(std::string question, std::string *filename,doub
 	bool result = false;
 	do
 	{
+		std::cin.clear();
+		std::cin.ignore();
 		std::cout << question << " :" << std::flush;
 		getline(std::cin, (*filename));
 		bool check = false;

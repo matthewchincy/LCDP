@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "10-0";
+const std::string programVersion = "9-0";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -82,7 +82,7 @@ int main() {
 				std::cout << "Error occurs!";
 				break;
 		}
-		std::cout << "Now load dataset: " << filename << std::endl;
+		
 		//// Read video input from user
 		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
 		//// Show input frame switch
@@ -96,6 +96,7 @@ int main() {
 		//// Debug switch
 		//debugSwitch = readBoolInput("Debug Mode(1/0)");
 
+		std::cout << "Now load dataset: " << filename << std::endl;
 		// Read video input from user
 		cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
 		// Show input frame switch
@@ -167,9 +168,9 @@ int main() {
 		bool NbMatchSwitch = true;
 		/*=====UPDATE Parameters=====*/
 		// Random replace model switch
-		bool RandomReplaceSwitch = false;
+		bool RandomReplaceSwitch = true;
 		// Random update neighbourhood model switch
-		bool RandomUpdateNbSwitch = false;
+		bool RandomUpdateNbSwitch = true;
 		// Feedback loop switch
 		bool FeedbackSwitch = true;
 

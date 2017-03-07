@@ -191,7 +191,7 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	// Per-pixel distance thresholds ('R(x)', but used as a relative value to determine both 
 	// intensity and descriptor variation thresholds)
 	resDistThreshold.create(frameSize, CV_32FC1);
-	resDistThreshold = cv::Scalar(0.0f);
+	resDistThreshold = cv::Scalar(1.0f);
 	// Per-pixel update rates('T(x)', which contains pixel - level 'sigmas')
 	resUpdateRate.create(frameSize, CV_32FC1);
 	resUpdateRate = cv::Scalar(upLearningRateLowerCap);
@@ -315,6 +315,15 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				if (((*bgWord).frameCount > 0)
 					&& (!DescriptorMatching(bgWord, currWord, pxPointer, LCDPThreshold, RGBThreshold,
 						tempMatchDistance, tempRgbMatchPixel, tempDarkPixel))) {
+					const float randNumber = ((double)std::rand() / (RAND_MAX));
+					if ((randNumber<=(1/(*updateRate)))&&(tempMatchDistance < (LCDPThreshold/2))) {
+						for (size_t channel = 0; channel < 3; channel++) {
+							(*bgWord).rgb[channel] = (*currWord).rgb[channel];
+						}
+						for (size_t channel = 0; channel < 16; channel++) {
+							(*bgWord).LCDP[channel] = (*currWord).LCDP[channel];
+						}
+					}
 					(*bgWord).frameCount += 1;
 					(*bgWord).q = frameIndex;
 					potentialPersistenceSum += currWordWeight;
@@ -340,7 +349,16 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					lastWordWeight = currWordWeight;
 				++localWordIdx;
 			}
-
+			while (localWordIdx<WORDS_NO) {
+				DescriptorStruct* bgWord = (bgWordPtr + startModelIndex + localWordIdx);
+				const float currWordWeight = GetLocalWordWeight(bgWord, frameIndex, descOffsetValue);
+				if (currWordWeight>lastWordWeight) {
+					std::swap(bgWordPtr[startModelIndex + localWordIdx], bgWordPtr[startModelIndex + localWordIdx - 1]);
+				}
+				else
+					lastWordWeight = currWordWeight;
+				++localWordIdx;
+			}
 			// BG Pixels
 			if (potentialPersistenceSum >= (*persistenceThreshold)) {
 				(*currFGMask) = 0;
@@ -433,13 +451,13 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				}
 			}
 			
-			// Random replace current frame's descriptor with the matched model - only for match pixel
+			// Random replace current frame's descriptor with the matched model
 			if (upRandomReplaceSwitch) {
 				const float randNumber = ((double)std::rand() / (RAND_MAX));
 				const float randNumber2 = ((double)std::rand() / (RAND_MAX));
 				bool checkTemp = ((1 / *(updateRate)) >= randNumber);
 				bool checkTemp2 = ((1 / FEEDBACK_T_LOWER) >= randNumber2);
-				const bool check1 = checkTemp && (!(*currFGMask)) && checkTemp2;
+				const bool check1 = (checkTemp && (!(*currFGMask))) || ((*currFGMask) && checkTemp2);
 				if (check1) {
 					int randNum = rand() % WORDS_NO;
 					DescriptorStruct* bgWord = (bgWordPtr + startModelIndex + randNum);
@@ -551,7 +569,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					(*distThreshold) += FEEDBACK_R_VAR;
 				}
 				else {
-					(*distThreshold) = std::max(0.0f, (*distThreshold) - FEEDBACK_R_VAR);
+					(*distThreshold) = std::max(1.0f, (*distThreshold) - FEEDBACK_R_VAR);
 				}
 				if (debugSwitch) {
 					if (debPxPointer == pxPointer) {
@@ -593,28 +611,27 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	cv::bitwise_or(resCurrFGMask, resFGMaskPreFlood, resCurrFGMask);
 	cv::bitwise_or(resCurrFGMask, compensationResult, resCurrFGMask);
 	// 2nd round
-
-	cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element2);
-	cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
-	resDarkPixel = DarkPixelGenerator(inputImg);
-	cv::morphologyEx(resDarkPixel, resDarkPixel, cv::MORPH_DILATE, element);	
-	cv::bitwise_and(resDarkPixel, gradientResult, gradientResult);
-	cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_DILATE, element3);
-	cv::bitwise_not(gradientResult, gradientResult);
-	cv::bitwise_and(tempCurrFGMask, gradientResult, tempCurrFGMask);
-	cv::morphologyEx(tempCurrFGMask, tempCurrFGMask, cv::MORPH_CLOSE, element2);
-	reconstructLine = BorderLineReconst(tempCurrFGMask);
-	//compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
-	cv::morphologyEx(tempCurrFGMask, resFGMaskPreFlood, cv::MORPH_CLOSE, element);
-	resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
-	cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
-	resFGMaskFloodedHoles = ContourFill(resFGMaskFloodedHoles);
-	cv::erode(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
-	cv::bitwise_or(tempCurrFGMask, resFGMaskFloodedHoles, tempCurrFGMask);
-	cv::bitwise_or(tempCurrFGMask, resFGMaskPreFlood, tempCurrFGMask);
-	cv::morphologyEx(tempCurrFGMask, tempCurrFGMask, cv::MORPH_CLOSE, element2);
-	cv::medianBlur(tempCurrFGMask, tempCurrFGMask, postMedianFilterSize);
-	cv::bitwise_and(resCurrFGMask, tempCurrFGMask, resCurrFGMask);
+	//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element2);
+	//cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
+	//resDarkPixel = DarkPixelGenerator(inputImg);
+	//cv::morphologyEx(resDarkPixel, resDarkPixel, cv::MORPH_DILATE, element);	
+	//cv::bitwise_and(resDarkPixel, gradientResult, gradientResult);
+	//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_DILATE, element3);
+	//cv::bitwise_not(gradientResult, gradientResult);
+	//cv::bitwise_and(tempCurrFGMask, gradientResult, tempCurrFGMask);
+	//cv::morphologyEx(tempCurrFGMask, tempCurrFGMask, cv::MORPH_CLOSE, element2);
+	//reconstructLine = BorderLineReconst(tempCurrFGMask);
+	////compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
+	//cv::morphologyEx(tempCurrFGMask, resFGMaskPreFlood, cv::MORPH_CLOSE, element);
+	//resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
+	//cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
+	//resFGMaskFloodedHoles = ContourFill(resFGMaskFloodedHoles);
+	//cv::erode(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
+	//cv::bitwise_or(tempCurrFGMask, resFGMaskFloodedHoles, tempCurrFGMask);
+	//cv::bitwise_or(tempCurrFGMask, resFGMaskPreFlood, tempCurrFGMask);
+	//cv::morphologyEx(tempCurrFGMask, tempCurrFGMask, cv::MORPH_CLOSE, element2);
+	//cv::medianBlur(tempCurrFGMask, tempCurrFGMask, postMedianFilterSize);
+	//cv::bitwise_and(resCurrFGMask, tempCurrFGMask, resCurrFGMask);
 		
 	cv::medianBlur(resCurrFGMask, resLastFGMask, postMedianFilterSize);
 	reconstructLine = BorderLineReconst(resLastFGMask);

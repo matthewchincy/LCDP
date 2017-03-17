@@ -58,57 +58,57 @@ int main() {
 	cv::Size FRAME_SIZE;
 	// Input LCDP threshold (0-1)
 	double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
-	for (size_t datasetIndex = 0;datasetIndex < 8;datasetIndex++) {
+	//for (size_t datasetIndex = 0;datasetIndex < 8;datasetIndex++) {
 		// Video file name
 		std::string filename;
-		switch (datasetIndex) {
-			case 0: filename = "bungalows";
-				break;
-			case 1: filename = "canoe";
-				break;
-			case 2:filename = "fall";
-				break;
-			case 3:filename = "cubicle";
-				break;
-			case 4: filename = "traffic";
-				break;
-			case 5:filename = "sofa";
-				break;
-			case 6: filename = "boats";
-				break;
-			case 7: filename = "fountain01";
-				break;
-			default:
-				std::cout << "Error occurs!";
-				break;
-		}
+		//switch (datasetIndex) {
+		//	case 0: filename = "bungalows";
+		//		break;
+		//	case 1: filename = "canoe";
+		//		break;
+		//	case 2:filename = "fall";
+		//		break;
+		//	case 3:filename = "cubicle";
+		//		break;
+		//	case 4: filename = "traffic";
+		//		break;
+		//	case 5:filename = "sofa";
+		//		break;
+		//	case 6: filename = "boats";
+		//		break;
+		//	case 7: filename = "fountain01";
+		//		break;
+		//	default:
+		//		std::cout << "Error occurs!";
+		//		break;
+		//}
 		
-		//// Read video input from user
-		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-		//// Show input frame switch
-		//showInputSwitch = readBoolInput("Show input frame(1/0)");
-		//// Show output frame switch
-		//showOutputSwitch = readBoolInput("Show output frame(1/0)");
-		//// Save result switch
-		//saveResultSwitch = readBoolInput("Save result(1/0)");
-		//// Evaluate result switch
-		//evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
-		//// Debug switch
-		//debugSwitch = readBoolInput("Debug Mode(1/0)");
-
-		std::cout << "Now load dataset: " << filename << std::endl;
 		// Read video input from user
-		cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
 		// Show input frame switch
-		showInputSwitch = false;
+		showInputSwitch = readBoolInput("Show input frame(1/0)");
 		// Show output frame switch
-		showOutputSwitch = false;
+		showOutputSwitch = readBoolInput("Show output frame(1/0)");
 		// Save result switch
-		saveResultSwitch = true;
+		saveResultSwitch = readBoolInput("Save result(1/0)");
 		// Evaluate result switch
-		evaluateResultSwitch = true;
+		evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
 		// Debug switch
-		debugSwitch = false;
+		debugSwitch = readBoolInput("Debug Mode(1/0)");
+
+		//std::cout << "Now load dataset: " << filename << std::endl;
+		//// Read video input from user
+		//cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		//// Show input frame switch
+		//showInputSwitch = false;
+		//// Show output frame switch
+		//showOutputSwitch = false;
+		//// Save result switch
+		//saveResultSwitch = true;
+		//// Evaluate result switch
+		//evaluateResultSwitch = true;
+		//// Debug switch
+		//debugSwitch = false;
 		
 
 		// Debug starting frame index
@@ -124,6 +124,7 @@ int main() {
 			debugY = readIntInput("Y-Point");
 			// Read starting frame index for debug
 			debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
+			
 		}
 
 		//// Input LCDP threshold (0-1)
@@ -149,6 +150,8 @@ int main() {
 		/****Define Threshold****/
 		// Total number of words per pixel
 		size_t Words_No = 35;
+		/*=====PRE PROCESS Parameters=====*/
+		bool PreSwitch = true;
 		/*=====CLASSIFIER Parameters=====*/
 		// RGB detection switch
 		bool RGBDiffSwitch = false;
@@ -173,18 +176,14 @@ int main() {
 		bool RandomUpdateNbSwitch = true;
 		// Feedback loop switch
 		bool FeedbackSwitch = true;
-
-		// Declare background subtractor construtor
-		BackgroundSubtractorLCDP backgroundSubtractorLCDP(FRAME_SIZE, ROI_FRAME, Words_No, RGBDiffSwitch,
-			RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold,
-			AndOrSwitch, NbMatchSwitch, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch);
+		/*=====POST PROCESS Parameters=====*/
+		bool PostSwitch = true;
 
 		// Read first frame from video
 		videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
 		videoCapture >> inputFrame;
 
-		// Initialize background subtractor
-		backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
+		
 
 		// Current date/time based on current system
 		tempStartTime = time(0);
@@ -192,18 +191,38 @@ int main() {
 		std::string startTime = currentDateTimeStamp(&tempStartTime);
 		// Current process result folder name
 		std::string folderName = filename + "/LCD Sample Consensus-" + programVersion + "-" + startTime;
-		const std::string currFolderName = folderName;
 
+		// Declare background subtractor construtor
+		BackgroundSubtractorLCDP backgroundSubtractorLCDP(folderName, FRAME_SIZE, ROI_FRAME, Words_No, RGBDiffSwitch,
+			RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold,
+			AndOrSwitch, NbMatchSwitch, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch, PostSwitch,PreSwitch);
+		// Initialize background subtractor
+		backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
+
+		const std::string currFolderName = folderName;
+		
 		const char *s1;
 		if (saveResultSwitch) {
 			s1 = folderName.c_str();
 			_mkdir(s1);
 			SaveParameter(folderName);
+			if (debugSwitch) {
+				std::ofstream myfile;
+				myfile.open(folderName + "/parameter.csv", std::ios::app);
+				myfile << "Debug Pixel, X:," << debugX << ",Y:," << debugY << "\n";
+				myfile << "Words No:," << Words_No << "\nRGB Switch:," << RGBDiffSwitch << ",RGB Threshold:," << RGBThreshold << ",Dark Pixel Switch:," << RGBBrightPxSwitch << "\n";
+				myfile << "LCDP Diff Switch:," << LCDPDiffSwitch << ",LCDP Threshold:," << LCDPThreshold << ",Max Threshold:," << LCDPMaxThreshold << "\n";
+				myfile << "And Or Switch:," << AndOrSwitch << ",NB Match Switch:," << NbMatchSwitch << ",Random replace switch:," << RandomReplaceSwitch << "\n";
+				myfile << "Random Update NB Switch:," << RandomUpdateNbSwitch << ",Feedback Switch:," << FeedbackSwitch << "\n";
+				myfile << "Frame Index,Distance Threshold,LCTP Threshold,Persistence Threshold,Update Rate,BG or FG,Potential Persistence,Min Distance,NB Match No, Final BG or FG,R,G,B,Overall Dmin\n";
+				myfile.close();
+			}
 			backgroundSubtractorLCDP.SaveParameter(folderName);
 			folderName += "/results";
 			s1 = folderName.c_str();
 			_mkdir(s1);
 		}
+		
 		char s[25];
 		for (int currFrameIndex = 1;currFrameIndex <= FRAME_COUNT;currFrameIndex++) {
 			if (debugFrameIndex <= currFrameIndex) {
@@ -256,7 +275,7 @@ int main() {
 				std::cout << "No saved results for evaluation" << std::endl;
 			}
 		}
-	}
+	//}
 	std::cout << "Program Completed!" << std::endl;
 	Beep(1568, 200);
 	Beep(1568, 200);
@@ -299,6 +318,11 @@ void SaveParameter(std::string folderName) {
 	myfile << "RESULT FOLDER: ";
 	myfile << folderName;
 	myfile << "\n";
+	myfile.close();
+	//std::ofstream myfile;
+	myfile.open(folderName + "/parameter.csv", std::ios::app);
+	myfile << "Program version,"<< programVersion<<"\n";
+	myfile << "RESULT FOLDER:,"<<folderName<<"\n";
 	myfile.close();
 }
 // Evaluate results
@@ -384,6 +408,10 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 	myfile << "PBC: " << std::setprecision(3) << std::fixed << PBC << std::endl;
 	myfile << "TOTAL SHADOW: " << std::setprecision(0) << std::fixed << TotalShadow << std::endl;
 	myfile.close();
+	std::cout << "\n<<<<<-STATISTICS  RESULTS->>>>>\n";
+	std::cout << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
+	std::cout << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
+	std::cout << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
 }
 // Calculate processing time
 void GenerateProcessTime(double FRAME_COUNT,std::string currFolderName) {

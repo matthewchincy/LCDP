@@ -8,10 +8,10 @@
 class BackgroundSubtractorLCDP {
 public:
 	/*******CONSTRUCTOR*******/ // Checked
-	BackgroundSubtractorLCDP(cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo,
+	BackgroundSubtractorLCDP(std::string folderName, cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo,
 		bool inputRGBDiffSwitch, double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch,
 		double inputLCDPThreshold, double inputLCDPMaxThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch,
-		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch);
+		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch, bool inputPostSwitch,bool inputPreSwitch);
 
 	/*******DESTRUCTOR*******/ // Checked
 	~BackgroundSubtractorLCDP();
@@ -31,7 +31,7 @@ public:
 	bool debugSwitch = false;
 	void DebugPxLocation(int x, int y);
 protected:
-
+	const std::string folderName;
 	// PRE-DEFINED STRUCTURE
 	// Descriptor structure - Checked
 	struct DescriptorStruct {
@@ -64,21 +64,35 @@ protected:
 	// Pixel info structure - Checked
 	struct PxInfo:PxInfoStruct {
 		// 16 neighbour pixels' info
-		PxInfoStruct nbIndex[16];
+		PxInfoStruct nbIndex[48];
 	};
 
 	/*=====LOOK-UP TABLE=====*/
 	// Neighbourhood's offset value
-	const cv::Point nbOffset[16] = {
+	const cv::Point nbOffset[48] = {
 		cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1),
 		cv::Point(-1, 0),  cv::Point(1, 0),
 		cv::Point(-1, 1),  cv::Point(0, 1),  cv::Point(1, 1),
 		cv::Point(-2, -2), cv::Point(0, -2), cv::Point(2, -2),
 		cv::Point(-2, 0),  cv::Point(2, 0),
-		cv::Point(-2, 2),  cv::Point(0, 2),  cv::Point(2, 2) };
+		cv::Point(-2, 2),  cv::Point(0, 2),  cv::Point(2, 2),
+		cv::Point(-1, -2),  cv::Point(1, -2),
+		cv::Point(-2, -1),  cv::Point(2, -1), 
+		cv::Point(-2, 1),  cv::Point(2, 1), 
+		cv::Point(-1, 2),  cv::Point(1, 2),
+		cv::Point(-3, -3),  cv::Point(0, -3),cv::Point(3, -3),
+		cv::Point(-3, 0),  cv::Point(3, 0),
+		cv::Point(-3, 3),  cv::Point(0, 3),cv::Point(3, 3),
+		cv::Point(-2, -3),  cv::Point(-1, -3),cv::Point(1, -3),cv::Point(2, -3),
+		cv::Point(-3, -2),  cv::Point(3, -2),
+		cv::Point(-3, -1),  cv::Point(3, -1),
+		cv::Point(-3, 2),  cv::Point(3, 2),
+		cv::Point(-3, 1),  cv::Point(3, 1),
+		cv::Point(-2, 3),  cv::Point(-1, 3),cv::Point(1, 3),cv::Point(2, 3)
+	};
 	// Internal pixel info LUT for all possible pixel indexes
 	PxInfo * pxInfoLUTPtr;
-	// LCD differences LUT
+	// LCD differences 
 	float * LCDDiffLUTPtr;
 
 	/*=====MODEL Parameters=====*/
@@ -94,6 +108,8 @@ protected:
 	/*=====PRE-PROCESS Parameters=====*/
 	// Size of gaussian filter
 	cv::Size preGaussianSize;
+	// Pre process switch
+	const bool preSwitch;
 
 	/*=====DESCRIPTOR Parameters=====*/
 	// Size of neighbourhood 3(3x3)/5(5x5)
@@ -136,6 +152,8 @@ protected:
 	size_t postMedianFilterSize;
 	// The compensation motion history threshold
 	cv::Mat postCompensationThreshold;
+	// Post processing switch
+	const bool postSwitch;
 
 	/*=====FRAME Parameters=====*/
 	// ROI frame
@@ -215,7 +233,8 @@ protected:
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match) - checked
 	bool DescriptorMatching(DescriptorStruct *pxWordPtr, DescriptorStruct *currPxWordPtr, const size_t pxPointer,
-		const double LCDPThreshold, const double RGBThreshold, float &tempMatchDistance, bool &rgbMatchPixel, bool &darkPixel);
+		const double LCDPThreshold, const double RGBThreshold, float &matchLCDPDistance, float &matchRGBDistance, 
+		bool &rgbMatchPixel, bool &darkPixel);
 	// LCD Matching (RETURN-True:Not match, False: Match) - checked
 	bool LCDPMatching(DescriptorStruct *bgWord, DescriptorStruct *currWord, const size_t pxPointer, const double LCDPThreshold, float &minDistance);
 	// RGB Matching (RETURN-True:Not match, False: Match) - checked

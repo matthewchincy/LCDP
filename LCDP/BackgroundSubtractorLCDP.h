@@ -11,7 +11,8 @@ public:
 	BackgroundSubtractorLCDP(std::string folderName, cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo,
 		bool inputRGBDiffSwitch, double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch,
 		double inputLCDPThreshold, double inputLCDPMaxThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch,
-		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch, bool inputPostSwitch,bool inputPreSwitch);
+		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch, bool inputPostSwitch,
+		bool inputPreSwitch, double inputDescColourDiffRatioInit);
 
 	/*******DESTRUCTOR*******/ // Checked
 	~BackgroundSubtractorLCDP();
@@ -26,8 +27,7 @@ public:
 	// Save parameters
 	void SaveParameter(std::string folderName);
 	
-	/*=====DEBUG=====*/
-	
+	/*=====DEBUG=====*/	
 	bool debugSwitch = false;
 	void DebugPxLocation(int x, int y);
 protected:
@@ -53,12 +53,12 @@ protected:
 		int coor_y;
 		// Coordinate X value for current pixel
 		int coor_x;
-		// Data index for pointer pixel
+		// Data index for current pixel's pointer
 		size_t dataIndex;
-		// Data index for BGR data
+		// Data index for current pixel's BGR pointer
 		size_t bgrDataIndex;
-		// Start index for pixel's model
-		size_t startModelIndex;
+		// Model index for current pixel
+		size_t modelIndex;
 	};
 
 	// Pixel info structure - Checked
@@ -70,9 +70,8 @@ protected:
 	/*=====LOOK-UP TABLE=====*/
 	// Neighbourhood's offset value
 	const cv::Point nbOffset[48] = {
-		cv::Point(-1, -1), cv::Point(0, -1), cv::Point(1, -1),
-		cv::Point(-1, 0),  cv::Point(1, 0),
-		cv::Point(-1, 1),  cv::Point(0, 1),  cv::Point(1, 1),
+		cv::Point(0, -1),	cv::Point(1, 0),	cv::Point(0, 1),	cv::Point(-1, 0),
+		cv::Point(-1, -1),  cv::Point(1, -1),	cv::Point(1, 1),	cv::Point(-1, 1),  
 		cv::Point(-2, -2), cv::Point(0, -2), cv::Point(2, -2),
 		cv::Point(-2, 0),  cv::Point(2, 0),
 		cv::Point(-2, 2),  cv::Point(0, 2),  cv::Point(2, 2),
@@ -116,6 +115,8 @@ protected:
 	cv::Mat descNbSize;
 	// Total number of neighbourhood pixel 8(3x3)/16(5x5)
 	cv::Mat descNbNo;
+	// LCD colour differences ratio initial
+	const double descColourDiffRatioInit;
 	// LCD colour differences ratio
 	cv::Mat descColorDiffRatio;
 	// Total number of differences per descriptor
@@ -186,10 +187,15 @@ protected:
 	// Per-pixel distance thresholds ('R(x)', but used as a relative value to determine both 
 	// intensity and descriptor variation thresholds)
 	cv::Mat resDistThreshold;
+	cv::Mat resDynamicRate;
 	// Per-pixel update rates('T(x)', which contains pixel - level 'sigmas')
 	cv::Mat resUpdateRate;
-	// Minimum match distance
-	cv::Mat resMinMatchDistance;
+	// Minimum LCDP distance
+	cv::Mat resMinLCDPDistance;
+	// Minimum RGB distance
+	cv::Mat resMinRGBDistance;
+	// Current pixel distance
+	cv::Mat resCurrPxDistance;
 	// Current foreground mask
 	cv::Mat resCurrFGMask;
 	// Previous foreground mask
@@ -203,9 +209,7 @@ protected:
 	// Flooded holes foreground mask
 	cv::Mat resFGMaskFloodedHoles;
 	// Pre flooded holes foreground mask
-	cv::Mat resFGMaskPreFlood;
-	// Current pixel distance
-	cv::Mat resCurrPxDistance;
+	cv::Mat resFGMaskPreFlood;	
 	// Dark Pixel
 	cv::Mat resDarkPixel;
 	// Last image frame
@@ -222,7 +226,7 @@ protected:
 	// Generate LCD Descriptor - checked
 	void LCDGenerator(const cv::Mat inputFrame, const PxInfo *pxInfoPtr, DescriptorStruct *wordPtr);
 	// Calculate word persistence value - checked
-	float GetLocalWordWeight(const DescriptorStruct* wordPtr, const size_t currFrameIndex, const size_t offsetValue);
+	float GetLocalWordPersistence(const DescriptorStruct* wordPtr, const size_t currFrameIndex, const size_t offsetValue);
 
 	/*=====LUT Methods=====*/
 	// Generate neighbourhood pixel offset value - checked

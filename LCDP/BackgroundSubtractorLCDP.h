@@ -8,11 +8,14 @@
 class BackgroundSubtractorLCDP {
 public:
 	/*******CONSTRUCTOR*******/ // Checked
-	BackgroundSubtractorLCDP(std::string folderName, cv::Size inputFrameSize, cv::Mat inputROI, size_t inputWordsNo,
-		bool inputRGBDiffSwitch, double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch,
-		double inputLCDPThreshold, double inputLCDPMaxThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch,
-		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch, bool inputPostSwitch,
-		bool inputPreSwitch, double inputDescColourDiffRatioInit);
+	BackgroundSubtractorLCDP(std::string folderName, size_t inputWordsNo, bool inputPreSwitch,
+		double inputDescColourDiffRatioInit, bool inputDescRatioCalculationMethod, bool inputRGBDiffSwitch,
+		double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, double inputLCDPThreshold,
+		double inputLCDPMaxThreshold, bool inputMatchingMethod, bool inputAndOrSwitch, bool inputNbMatchSwitch,
+		cv::Mat inputROI, cv::Size inputFrameSize,
+		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch,
+		float inputDynamicRateIncrease, float inputDynamicRateDecrease, float inputUpdateRateIncrease, float inputUpdateRateDecrease,
+		float inputUpdateRateLowest, float inputUpdateRateHighest, bool inputPostSwitch);
 
 	/*******DESTRUCTOR*******/ // Checked
 	~BackgroundSubtractorLCDP();
@@ -25,9 +28,9 @@ public:
 
 	/*=====OTHERS Methods=====*/
 	// Save parameters
-	void SaveParameter(std::string folderName);
-	
-	/*=====DEBUG=====*/	
+	void SaveParameter(std::string filename, std::string folderName);
+
+	/*=====DEBUG=====*/
 	bool debugSwitch = false;
 	void DebugPxLocation(int x, int y);
 protected:
@@ -62,7 +65,7 @@ protected:
 	};
 
 	// Pixel info structure - Checked
-	struct PxInfo:PxInfoStruct {
+	struct PxInfo :PxInfoStruct {
 		// 16 neighbour pixels' info
 		PxInfoStruct nbIndex[48];
 	};
@@ -71,13 +74,13 @@ protected:
 	// Neighbourhood's offset value
 	const cv::Point nbOffset[48] = {
 		cv::Point(0, -1),	cv::Point(1, 0),	cv::Point(0, 1),	cv::Point(-1, 0),
-		cv::Point(-1, -1),  cv::Point(1, -1),	cv::Point(1, 1),	cv::Point(-1, 1),  
+		cv::Point(-1, -1),  cv::Point(1, -1),	cv::Point(1, 1),	cv::Point(-1, 1),
 		cv::Point(-2, -2), cv::Point(0, -2), cv::Point(2, -2),
 		cv::Point(-2, 0),  cv::Point(2, 0),
 		cv::Point(-2, 2),  cv::Point(0, 2),  cv::Point(2, 2),
 		cv::Point(-1, -2),  cv::Point(1, -2),
-		cv::Point(-2, -1),  cv::Point(2, -1), 
-		cv::Point(-2, 1),  cv::Point(2, 1), 
+		cv::Point(-2, -1),  cv::Point(2, -1),
+		cv::Point(-2, 1),  cv::Point(2, 1),
 		cv::Point(-1, 2),  cv::Point(1, 2),
 		cv::Point(-3, -3),  cv::Point(0, -3),cv::Point(3, -3),
 		cv::Point(-3, 0),  cv::Point(3, 0),
@@ -123,6 +126,8 @@ protected:
 	const size_t descDiffNo;
 	// Persistence's offset value;
 	const size_t descOffsetValue;
+	// Ratio calculation method
+	const bool descRatioCalculationMethod;
 
 	/*=====CLASSIFIER Parameters=====*/
 	// RGB detection switch
@@ -147,7 +152,9 @@ protected:
 	cv::Mat clsPersistenceThreshold;
 	// Minimum persistence threhsold value
 	float clsMinPersistenceThreshold;
-	
+	// Classify method
+	const bool clsMatchingMethod;
+
 	/*=====POST-PROCESS Parameters=====*/
 	// Size of median filter
 	size_t postMedianFilterSize;
@@ -182,11 +189,24 @@ protected:
 	cv::Mat upNbNo;
 	// Feedback loop switch
 	const bool upFeedbackSwitch;
-	
+	// Feedback V(x) Increment
+	float upDynamicRateIncrease;
+	// Feedback V(x) Decrement
+	float upDynamicRateDecrease;
+	// Feedback T(x) Increment
+	float upUpdateRateIncrease;
+	// Feedback T(x) Decrement
+	float upUpdateRateDecrease;
+	// Feedback T(x) Lowest
+	float upUpdateRateLowest;
+	// Feedback T(x) Highest
+	float upUpdateRateHighest;
+
 	/*=====RESULTS=====*/
 	// Per-pixel distance thresholds ('R(x)', but used as a relative value to determine both 
 	// intensity and descriptor variation thresholds)
 	cv::Mat resDistThreshold;
+	// Per-pixel dynamic learning rate ('V(x)')
 	cv::Mat resDynamicRate;
 	// Per-pixel update rates('T(x)', which contains pixel - level 'sigmas')
 	cv::Mat resUpdateRate;
@@ -209,7 +229,7 @@ protected:
 	// Flooded holes foreground mask
 	cv::Mat resFGMaskFloodedHoles;
 	// Pre flooded holes foreground mask
-	cv::Mat resFGMaskPreFlood;	
+	cv::Mat resFGMaskPreFlood;
 	// Dark Pixel
 	cv::Mat resDarkPixel;
 	// Last image frame
@@ -237,7 +257,7 @@ protected:
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN-True:Not match, False: Match) - checked
 	bool DescriptorMatching(DescriptorStruct *pxWordPtr, DescriptorStruct *currPxWordPtr, const size_t pxPointer,
-		const double LCDPThreshold, const double RGBThreshold, float &matchLCDPDistance, float &matchRGBDistance, 
+		const double LCDPThreshold, const double RGBThreshold, float &matchLCDPDistance, float &matchRGBDistance,
 		bool &rgbMatchPixel, bool &darkPixel);
 	// LCD Matching (RETURN-True:Not match, False: Match) - checked
 	bool LCDPMatching(DescriptorStruct *bgWord, DescriptorStruct *currWord, const size_t pxPointer, const double LCDPThreshold, float &minDistance);

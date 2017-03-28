@@ -16,7 +16,7 @@ double readDoubleInput(std::string question);
 // Read boolean value input
 bool readBoolInput(std::string question);
 // Read video input
-cv::VideoCapture readVideoInput(std::string question, std::string *filename, 
+cv::VideoCapture readVideoInput(std::string question, std::string *filename,
 	double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE);
 cv::VideoCapture readVideoInput2(std::string question, std::string *filename, double *FPS,
 	double *FRAME_COUNT, cv::Size *FRAME_SIZE);
@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "LCDP Test Pattern NEW";
+const std::string programVersion = "LCDP Test Full NEW";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -49,88 +49,94 @@ time_t tempStartTime;
 // Program finish time
 time_t tempFinishTime;
 int main() {
-	std::cout <<"Program Version: "<< programVersion << std::endl;
+	std::cout << "Program Version: " << programVersion << std::endl;
 	// Frames per second (FPS) of the input video
 	double FPS;
 	// Total number of frame of the input video
 	double FRAME_COUNT;
 	// Frame size of the input video
 	cv::Size FRAME_SIZE;
-	double ratio[5] = { 0.05,0.1,0.15,0.2,0.25 };
+	double ratio[2] = { 0.15,0.2 };
 	// Input LCDP threshold (0-1)
-	double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
-
+	//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
+	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
+	double LCDPThresh[4] = {0.32,0.38,0.45,0.5 };
 	//for (size_t datasetIndex = 0;datasetIndex < 8;datasetIndex++) {
 		// Video file name
-		std::string filename;
-		//switch (datasetIndex) {
-		//	case 0: filename = "bungalows";
-		//		break;
-		//	case 1: filename = "canoe";
-		//		break;
-		//	case 2:filename = "fall";
-		//		break;
-		//	case 3:filename = "cubicle";
-		//		break;
-		//	case 4: filename = "traffic";
-		//		break;
-		//	case 5:filename = "sofa";
-		//		break;
-		//	case 6: filename = "boats";
-		//		break;
-		//	case 7: filename = "fountain01";
-		//		break;
-		//	default:
-		//		std::cout << "Error occurs!";
-		//		break;
-		//}
-		
-		// Read video input from user
-		cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-		// Show input frame switch
-		showInputSwitch = readBoolInput("Show input frame(1/0)");
-		// Show output frame switch
-		showOutputSwitch = readBoolInput("Show output frame(1/0)");
-		// Save result switch
-		saveResultSwitch = readBoolInput("Save result(1/0)");
-		// Evaluate result switch
-		evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
-		// Debug switch
-		debugSwitch = readBoolInput("Debug Mode(1/0)");
+	std::string filename;
+	//switch (datasetIndex) {
+	//	case 0: filename = "bungalows";
+	//		break;
+	//	case 1: filename = "canoe";
+	//		break;
+	//	case 2:filename = "fall";
+	//		break;
+	//	case 3:filename = "cubicle";
+	//		break;
+	//	case 4: filename = "traffic";
+	//		break;
+	//	case 5:filename = "sofa";
+	//		break;
+	//	case 6: filename = "boats";
+	//		break;
+	//	case 7: filename = "fountain01";
+	//		break;
+	//	default:
+	//		std::cout << "Error occurs!";
+	//		break;
+	//}
 
-		
-		//std::cout << "Now load dataset: " << filename << std::endl;
-		//// Read video input from user
-		//cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-		//// Show input frame switch
-		//showInputSwitch = false;
-		//// Show output frame switch
-		//showOutputSwitch = false;
-		//// Save result switch
-		//saveResultSwitch = true;
-		//// Evaluate result switch
-		//evaluateResultSwitch = true;
-		//// Debug switch
-		//debugSwitch = false;
-		
+	
+	// Show input frame switch
+	showInputSwitch = readBoolInput("Show input frame(1/0)");
+	// Show output frame switch
+	showOutputSwitch = readBoolInput("Show output frame(1/0)");
+	// Save result switch
+	saveResultSwitch = readBoolInput("Save result(1/0)");
+	// Evaluate result switch
+	evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
+	// Debug switch
+	debugSwitch = readBoolInput("Debug Mode(1/0)");
+	// Read video input from user
+	cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
 
-		// Debug starting frame index
-		int debugFrameIndex = 0;
-		// Debug x-point
-		int debugX = 0;
-		// Debug y-point
-		int debugY = 0;
-		if (debugSwitch) {
-			// Read x-point for debug
-			debugX = readIntInput("X-Point");
-			// Read y-point for debug
-			debugY = readIntInput("Y-Point");
-			// Read starting frame index for debug
-			debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
-			
-		}
-		for (int ratioIndex = 0; ratioIndex < 5; ratioIndex++) {
+	//std::cout << "Now load dataset: " << filename << std::endl;
+	//// Read video input from user
+	//cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+	//// Show input frame switch
+	//showInputSwitch = false;
+	//// Show output frame switch
+	//showOutputSwitch = false;
+	//// Save result switch
+	//saveResultSwitch = true;
+	//// Evaluate result switch
+	//evaluateResultSwitch = true;
+	//// Debug switch
+	//debugSwitch = false;
+
+
+	// Debug starting frame index
+	int debugFrameIndex = 0;
+	// Debug x-point
+	int debugX = 0;
+	// Debug y-point
+	int debugY = 0;
+	if (debugSwitch) {
+		// Read x-point for debug
+		debugX = readIntInput("X-Point");
+		// Read y-point for debug
+		debugY = readIntInput("Y-Point");
+		// Read starting frame index for debug
+		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
+
+	}
+	for (int lcdpIndex = 0; lcdpIndex < 5; lcdpIndex++) {
+		std::cout << "LCDP:" << LCDPThresh[lcdpIndex] << std::endl;
+		double inputLCDPThreshold = LCDPThresh[lcdpIndex];
+		for (int ratioIndex = 0; ratioIndex < 2; ratioIndex++) {
+			std::cout << "Ratio:" << ratio[ratioIndex] << std::endl;
 			double inputDescColourDiffRatioInit = ratio[ratioIndex];
+		
 			//// Input LCDP threshold (0-1)
 			//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 			// Input frame
@@ -153,7 +159,7 @@ int main() {
 
 			/****Define Threshold****/
 			// Total number of words per pixel
-			size_t Words_No = 50;
+			size_t Words_No = 35;
 			/*=====PRE PROCESS Parameters=====*/
 			bool PreSwitch = true;
 
@@ -173,14 +179,14 @@ int main() {
 			// LCDP detection AND (true) OR (false) switch
 			bool AndOrSwitch = false;
 			// Neighbourhood matching switch
-			bool NbMatchSwitch = false;
+			bool NbMatchSwitch = true;
 			/*=====UPDATE Parameters=====*/
 			// Random replace model switch
-			bool RandomReplaceSwitch = false;
+			bool RandomReplaceSwitch = true;
 			// Random update neighbourhood model switch
-			bool RandomUpdateNbSwitch = false;
+			bool RandomUpdateNbSwitch = true;
 			// Feedback loop switch
-			bool FeedbackSwitch = false;
+			bool FeedbackSwitch = true;
 			/*=====POST PROCESS Parameters=====*/
 			bool PostSwitch = false;
 
@@ -209,32 +215,35 @@ int main() {
 				s1 = folderName.c_str();
 				_mkdir(s1);
 				SaveParameter(folderName);
-				if (debugSwitch) {
-					std::ofstream myfile;
-					myfile.open(folderName + "/parameter.csv", std::ios::app);
-					myfile << "Debug Pixel, X:," << debugX << ",Y:," << debugY << "\n";
-					myfile << "Words No:," << Words_No << "\nRGB Switch:," << RGBDiffSwitch << ",RGB Threshold:," << RGBThreshold << ",Dark Pixel Switch:," << RGBBrightPxSwitch << "\n";
-					myfile << "LCDP Diff Switch:," << LCDPDiffSwitch << ",LCDP Threshold:," << LCDPThreshold << ",Max Threshold:," << LCDPMaxThreshold << "\n";
-					myfile << "And Or Switch:," << AndOrSwitch << ",NB Match Switch:," << NbMatchSwitch << ",Random replace switch:," << RandomReplaceSwitch << "\n";
-					myfile << "Random Update NB Switch:," << RandomUpdateNbSwitch << ",Feedback Switch:," << FeedbackSwitch << "\n";
-					myfile << "Frame Index,Distance Threshold,LCTP Threshold,Persistence Threshold,Update Rate,BG or FG,Potential Persistence,Min Distance,NB Match No, Final BG or FG,R,G,B,Overall Dmin\n";
-					myfile.close();
-				}
+				//if (debugSwitch) {
+				//	std::ofstream myfile;
+				//	myfile.open(folderName + "/parameter.csv", std::ios::app);
+				//	myfile << "Debug Pixel, X:," << debugX << ",Y:," << debugY << "\n";
+				//	myfile << "Words No:," << Words_No << "\nRGB Switch:," << RGBDiffSwitch << ",RGB Threshold:," << RGBThreshold << ",Dark Pixel Switch:," << RGBBrightPxSwitch << "\n";
+				//	myfile << "LCDP Diff Switch:," << LCDPDiffSwitch << ",LCDP Threshold:," << LCDPThreshold << ",Max Threshold:," << LCDPMaxThreshold << "\n";
+				//	myfile << "And Or Switch:," << AndOrSwitch << ",NB Match Switch:," << NbMatchSwitch << ",Random replace switch:," << RandomReplaceSwitch << "\n";
+				//	myfile << "Random Update NB Switch:," << RandomUpdateNbSwitch << ",Feedback Switch:," << FeedbackSwitch << "\n";
+				//	myfile << "Frame Index,Distance Threshold,LCTP Threshold,Persistence Threshold,Update Rate,BG or FG,Potential Persistence,Min Distance,NB Match No, Final BG or FG,R,G,B,Overall Dmin\n";
+				//	myfile.close();
+				//}
 				backgroundSubtractorLCDP.SaveParameter(folderName);
 				folderName += "/results";
 				s1 = folderName.c_str();
 				_mkdir(s1);
 			}
-
+			std::ofstream myfile;
+			myfile.open(filename + "/newparameter.csv", std::ios::app);
+			myfile << "OLD," << inputLCDPThreshold << "," << inputDescColourDiffRatioInit;
+			myfile.close();
 			char s[25];
 			for (int currFrameIndex = 1; currFrameIndex <= FRAME_COUNT; currFrameIndex++) {
-				if (debugFrameIndex <= currFrameIndex) {
-					debugFrameIndex = FRAME_COUNT + 1;
-					if (debugSwitch) {
-						backgroundSubtractorLCDP.debugSwitch = true;
-						backgroundSubtractorLCDP.DebugPxLocation(debugX, debugY);
-					}
-				}
+				//if (debugFrameIndex <= currFrameIndex) {
+				//	debugFrameIndex = FRAME_COUNT + 1;
+				//	if (debugSwitch) {
+				//		backgroundSubtractorLCDP.debugSwitch = true;
+				//		backgroundSubtractorLCDP.DebugPxLocation(debugX, debugY);
+				//	}
+				//}
 
 				// Process current frame
 				backgroundSubtractorLCDP.Process(inputFrame, fgMask);
@@ -279,16 +288,17 @@ int main() {
 				}
 			}
 		}
+	}
 	//}
 	std::cout << "Program Completed!" << std::endl;
-	Beep(1568, 200);
-	Beep(1568, 200);
-	Beep(1568, 200);
-	Beep(1245, 1000);
-	Beep(1397, 200);
-	Beep(1397, 200);
-	Beep(1397, 200);
-	Beep(1175, 1000);
+	//Beep(1568, 200);
+	//Beep(1568, 200);
+	//Beep(1568, 200);
+	//Beep(1245, 1000);
+	//Beep(1397, 200);
+	//Beep(1397, 200);
+	//Beep(1397, 200);
+	//Beep(1175, 1000);
 	system("pause");
 	return 0;
 }
@@ -325,8 +335,8 @@ void SaveParameter(std::string folderName) {
 	myfile.close();
 	//std::ofstream myfile;
 	myfile.open(folderName + "/parameter.csv", std::ios::app);
-	myfile << "Program version,"<< programVersion<<"\n";
-	myfile << "RESULT FOLDER:,"<<folderName<<"\n";
+	myfile << "Program version," << programVersion << "\n";
+	myfile << "RESULT FOLDER:," << folderName << "\n";
 	myfile.close();
 }
 // Evaluate results
@@ -343,12 +353,12 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 	infile.close();
 	std::string groundtruthFolder = filename + "/groundtruth";
 	char s[25];
-	for (size_t startIndex = idxFrom;startIndex <= idxTo;startIndex++) {
+	for (size_t startIndex = idxFrom; startIndex <= idxTo; startIndex++) {
 		sprintf(s, "%06d.png", (startIndex));
 		//cv::Mat gtImg = cv::imread( "bungalows/groundtruth/gt000001.png");
 		cv::Mat gtImg = cv::imread(groundtruthFolder + "/gt" + s, CV_LOAD_IMAGE_GRAYSCALE);
 		cv::Mat resultImg = cv::imread(folderName + "/bin" + s, CV_LOAD_IMAGE_GRAYSCALE);
-		for (size_t pxPointer = 0;pxPointer < (resultImg.rows*resultImg.cols);pxPointer++) {
+		for (size_t pxPointer = 0; pxPointer < (resultImg.rows*resultImg.cols); pxPointer++) {
 
 			double gtValue = gtImg.data[pxPointer];
 			double resValue = resultImg.data[pxPointer];
@@ -416,10 +426,14 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 	std::cout << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
 	std::cout << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
 	std::cout << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
+
+	myfile.open(filename + "/newparameter.csv", std::ios::app);
+	myfile << "," << std::setprecision(3) << std::fixed << recall << "," << std::setprecision(3) << std::fixed << precision << "," << std::setprecision(3) << std::fixed << FMeasure << "\n";
+	myfile.close();
 }
 // Calculate processing time
-void GenerateProcessTime(double FRAME_COUNT,std::string currFolderName) {
-	
+void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName) {
+
 	double diffSeconds = difftime(tempFinishTime, tempStartTime);
 	int seconds, hours, minutes;
 	minutes = diffSeconds / 60;
@@ -534,8 +548,8 @@ bool readBoolInput(std::string question)
 	return (result);
 }
 // Read video input
-cv::VideoCapture readVideoInput(std::string question, std::string *filename,double *FPS,
-	double *FRAME_COUNT,cv::Size *FRAME_SIZE )
+cv::VideoCapture readVideoInput(std::string question, std::string *filename, double *FPS,
+	double *FRAME_COUNT, cv::Size *FRAME_SIZE)
 {
 	// Video capture variable
 	cv::VideoCapture videoCapture;
@@ -551,7 +565,7 @@ cv::VideoCapture readVideoInput(std::string question, std::string *filename,doub
 		std::cout << question << " :" << std::flush;
 		getline(std::cin, (*filename));
 		bool check = false;
-		for (size_t formatIndex = 0;formatIndex < 2;formatIndex++) {
+		for (size_t formatIndex = 0; formatIndex < 2; formatIndex++) {
 			switch (formatIndex) {
 			case 0:
 				videoName = (*filename) + "/" + (*filename) + ".avi";
@@ -607,7 +621,7 @@ cv::VideoCapture readVideoInput2(std::string question, std::string *filename, do
 		/*std::cout << question << " :" << std::flush;
 		getline(std::cin, (*filename));*/
 		bool check = false;
-		for (size_t formatIndex = 0;formatIndex < 2;formatIndex++) {
+		for (size_t formatIndex = 0; formatIndex < 2; formatIndex++) {
 			switch (formatIndex) {
 			case 0:
 				videoName = (*filename) + "/" + (*filename) + ".avi";

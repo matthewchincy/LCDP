@@ -774,6 +774,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 								(*bgWord).LCDP[channel] = (*currWord).LCDP[channel];
 							}
 						}
+						delete matchIndex;
 					}
 					else if (clsMatchingMethod) {
 						// Current neighbour pixel's matching threshold
@@ -820,6 +821,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 							}
 							++currLocalWordIdx;
 						}
+						delete matchIndex;
 						if (clsNBPotentialMatch < clsNBMatchThreshold) {
 							DescriptorStruct* bgWord = (bgWordPtr + startNBModelIndex + WORDS_NO - 1);
 							(*bgWord).frameCount = (*currWord).frameCount;

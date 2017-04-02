@@ -121,7 +121,13 @@ int main() {
 	const char *s2;
 	s2 = overallFolder.c_str();
 	_mkdir(s2);
-
+	std::ofstream myfile;
+	myfile.open(overallFolder + "/parameter.csv", std::ios::app);
+	myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
+	myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,RGB Dark Detect, LCD Detect, LCD And Or, LCDP Threshold, Max LCDP Threshold,";
+	myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Initial Update Rate, Random Update Switch,";
+	myfile << "Update NB No, Feedback Switch,Initial R, V Inc, V Desc, T Inc, T Desc,T Min, T Max, R Inc, Words, Recall, Precision, FMeasure\n";
+	myfile.close();
 	//std::cout << "Now load dataset: " << filename << std::endl;
 	//// Read video input from user
 	//cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
@@ -364,10 +370,6 @@ void SaveParameter(std::string filename, std::string folderName) {
 	myfile.close();
 	//std::ofstream myfile;
 	myfile.open(filename + "/parameter.csv", std::ios::app);
-	myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
-	myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,RGB Dark Detect, LCD Detect, LCD And Or, LCDP Threshold, Max LCDP Threshold,";
-	myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Initial Update Rate, Random Update Switch,";
-	myfile << "Update NB No, Feedback Switch,Initial R, V Inc, V Desc, T Inc, T Desc,T Min, T Max, R Inc, Words, Recall, Precision, FMeasure\n";
 	myfile << programVersion << "," << folderName;
 	myfile.close();
 }

@@ -30,7 +30,7 @@
 BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(std::string folderName, size_t inputWordsNo, bool inputPreSwitch,
 	double inputDescColourDiffRatioInit, bool inputDescRatioCalculationMethod, bool inputRGBDiffSwitch,
 	double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, double inputLCDPThreshold,
-	double inputLCDPMaxThreshold, bool inputMatchingMethod, bool inputAndOrSwitch, bool inputNbMatchSwitch,
+	double inputLCDPMaxThreshold, bool inputMatchingMethod, int inputMatchThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch,
 	cv::Mat inputROI, cv::Size inputFrameSize,
 	bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch,
 	float inputDynamicRateIncrease, float inputDynamicRateDecrease, float inputUpdateRateIncrease, float inputUpdateRateDecrease,
@@ -89,6 +89,8 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(std::string folderName, size_
 	clsNbMatchSwitch(inputNbMatchSwitch),
 	// Classify method
 	clsMatchingMethod(inputMatchingMethod),
+	// Matching threshold
+	clsMatchThreshold(inputMatchThreshold),
 
 	/*=====FRAME Parameters=====*/
 	// ROI frame
@@ -526,8 +528,6 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			}
 			else if (clsMatchingMethod) {
 				// New Classify method	
-				// Current pixel's matching threshold
-				int clsMatchThreshold = 2;
 				// Number of potential matched model
 				int clsPotentialMatch = 0;
 				while (currLocalWordIdx < WORDS_NO && clsPotentialMatch < clsMatchThreshold) {
@@ -596,7 +596,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 							// Neighbour pixel pointer
 							size_t nbPxPointer = pxInfoLUTPtr[pxPointer].nbIndex[nbIndex].dataIndex;
 							// Current neighbour pixel's matching threshold
-							int clsNBMatchThreshold = 2;
+							int clsNBMatchThreshold = clsMatchThreshold;
 							// Number of potential matched model
 							int clsNBPotentialMatch = 0;
 							// Neighbour pixel's model index
@@ -671,19 +671,23 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				// Random replace current frame's descriptor with the model
 				if (upRandomReplaceSwitch) {
 					const float randNumber = ((double)std::rand() / (RAND_MAX));
-					const float randNumber2 = ((double)std::rand() / (RAND_MAX));
+					
 					bool checkTemp = ((1 / (*currUpdateRate)) >= randNumber);
 
 					if (checkTemp) {
 						if ((*currFGMask)) {
 							// FG
-							DescriptorStruct* bgWord = (bgWordPtr + currModelIndex + WORDS_NO - 1);
-							for (size_t channel = 0; channel < 3; channel++) {
-								(*bgWord).rgb[channel] = (*currWord).rgb[channel];
-							}
-							for (size_t channel = 0; channel < 16; channel++) {
-								(*bgWord).LCDP[channel] = (*currWord).LCDP[channel];
-							}
+							const float randNumber2 = ((double)std::rand() / (RAND_MAX));
+							bool checkTemp2 = ((1 / (*currUpdateRate)) >= randNumber2);
+							if (checkTemp2) {								
+								DescriptorStruct* bgWord = (bgWordPtr + currModelIndex + WORDS_NO - 1);
+								for (size_t channel = 0; channel < 3; channel++) {
+									(*bgWord).rgb[channel] = (*currWord).rgb[channel];
+								}
+								for (size_t channel = 0; channel < 16; channel++) {
+									(*bgWord).LCDP[channel] = (*currWord).LCDP[channel];
+								}
+							}							
 						}
 						else {
 							// BG
@@ -778,7 +782,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					}
 					else if (clsMatchingMethod) {
 						// Current neighbour pixel's matching threshold
-						int clsNBMatchThreshold = 2;
+						int clsNBMatchThreshold = clsMatchThreshold;
 						// Number of potential matched model
 						int clsNBPotentialMatch = 0;
 						currLastWordPersistence = FLT_MAX;
@@ -823,16 +827,35 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 						}
 						delete matchIndex;
 						if (clsNBPotentialMatch < clsNBMatchThreshold) {
-							DescriptorStruct* bgWord = (bgWordPtr + startNBModelIndex + WORDS_NO - 1);
-							(*bgWord).frameCount = (*currWord).frameCount;
-							(*bgWord).p = (*currWord).p;
-							(*bgWord).q = (*currWord).q;
-							for (size_t channel = 0; channel < 3; channel++) {
-								(*bgWord).rgb[channel] = (*currWord).rgb[channel];
+							if ((*currFGMask)) {
+								// FG
+								//const float randNumber2 = ((double)std::rand() / (RAND_MAX / 2));
+								//bool checkTemp2 = ((1 / (*currUpdateRate)) >= randNumber2);
+								//if (checkTemp2) {
+									DescriptorStruct* bgWord = (bgWordPtr + startNBModelIndex + WORDS_NO - 1);
+									(*bgWord).frameCount = (*currWord).frameCount;
+									(*bgWord).p = (*currWord).p;
+									(*bgWord).q = (*currWord).q;
+									for (size_t channel = 0; channel < 3; channel++) {
+										(*bgWord).rgb[channel] = (*currWord).rgb[channel];
+									}
+									for (size_t channel = 0; channel < 16; channel++) {
+										(*bgWord).LCDP[channel] = (*currWord).LCDP[channel];
+									}
+								//}
 							}
-							for (size_t channel = 0; channel < 16; channel++) {
-								(*bgWord).LCDP[channel] = (*currWord).LCDP[channel];
-							}
+							else {
+								DescriptorStruct* bgWord = (bgWordPtr + startNBModelIndex + WORDS_NO - 1);
+								(*bgWord).frameCount = (*currWord).frameCount;
+								(*bgWord).p = (*currWord).p;
+								(*bgWord).q = (*currWord).q;
+								for (size_t channel = 0; channel < 3; channel++) {
+									(*bgWord).rgb[channel] = (*currWord).rgb[channel];
+								}
+								for (size_t channel = 0; channel < 16; channel++) {
+									(*bgWord).LCDP[channel] = (*currWord).LCDP[channel];
+								}
+							}							
 						}
 					}
 				}
@@ -1520,6 +1543,8 @@ void BackgroundSubtractorLCDP::SaveParameter(std::string filename, std::string f
 	myfile << int(*(clsNbNo.data));
 	myfile << "\nClassify matching method:";
 	myfile << clsMatchingMethod;
+	myfile << "\nClassify matching threshold:";
+	myfile << clsMatchThreshold;
 
 	myfile << "\n\n<<<<<-UPDATE DEFAULT PARAMETER->>>>>";
 	myfile << "\nRandom replace model switch:";
@@ -1565,12 +1590,12 @@ void BackgroundSubtractorLCDP::SaveParameter(std::string filename, std::string f
 	myfile << "," << *(colorDiffRatio) << "," << descOffsetValue << "," << clsRGBDiffSwitch;
 	myfile << "," << clsRGBBrightPxSwitch << "," << clsLCDPDiffSwitch << "," << clsAndOrSwitch << "," << clsLCDPThreshold;
 	myfile << "," << clsLCDPMaxThreshold;
-	myfile << "," << *(persistenceThreshold) << "," << descRatioCalculationMethod << ",";
-	myfile << clsNbMatchSwitch << "," << int(*(clsNbNo.data)) << "," << clsMatchingMethod << "," << upRandomReplaceSwitch;
-	myfile << "," << *(updateRate) << "," << upRandomUpdateNbSwitch << "," << *(updateRate) << "," << int(*(upNbNo.data));
-	myfile << "," << upFeedbackSwitch << "," << *(updateRate);
-	myfile << "," << *(distThreshold) << "," << upDynamicRateIncrease << "," << upDynamicRateDecrease << "," << upUpdateRateDecrease;
-	myfile << "," << upUpdateRateIncrease << "," << upLearningRateLowerCap << "," << upLearningRateUpperCap;
+	myfile << "," << *(persistenceThreshold) << "," << clsMatchThreshold << "," << descRatioCalculationMethod << ",";
+	myfile << clsNbMatchSwitch << "," << clsMatchingMethod << "," << upRandomReplaceSwitch;
+	myfile << "," << *(updateRate) << "," << upRandomUpdateNbSwitch << "," << int(*(upNbNo.data));
+	myfile << "," << upFeedbackSwitch;
+	myfile << "," << *(distThreshold) << "," << upDynamicRateIncrease << "," << upDynamicRateDecrease << "," << upUpdateRateIncrease;
+	myfile << "," << upUpdateRateDecrease << "," << upLearningRateLowerCap << "," << upLearningRateUpperCap;
 	myfile << "," << FEEDBACK_R_VAR << "," << WORDS_NO;
 	myfile.close();
 }

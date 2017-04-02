@@ -11,7 +11,7 @@ public:
 	BackgroundSubtractorLCDP(std::string folderName, size_t inputWordsNo, bool inputPreSwitch,
 		double inputDescColourDiffRatioInit, bool inputDescRatioCalculationMethod, bool inputRGBDiffSwitch,
 		double inputRGBThreshold, bool inputRGBBrightPxSwitch, bool inputLCDPDiffSwitch, double inputLCDPThreshold,
-		double inputLCDPMaxThreshold, bool inputMatchingMethod, bool inputAndOrSwitch, bool inputNbMatchSwitch,
+		double inputLCDPMaxThreshold, bool inputMatchingMethod, int inputMatchThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch,
 		cv::Mat inputROI, cv::Size inputFrameSize,
 		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch,
 		float inputDynamicRateIncrease, float inputDynamicRateDecrease, float inputUpdateRateIncrease, float inputUpdateRateDecrease,
@@ -154,6 +154,8 @@ protected:
 	float clsMinPersistenceThreshold;
 	// Classify method
 	const bool clsMatchingMethod;
+	// Matching threshold
+	const int clsMatchThreshold;
 
 	/*=====POST-PROCESS Parameters=====*/
 	// Size of median filter

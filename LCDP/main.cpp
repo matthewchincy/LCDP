@@ -50,9 +50,7 @@ time_t tempStartTime;
 time_t tempFinishTime;
 int main() {
 	std::cout << "Program Version: " << programVersion << std::endl;
-	const char *s2;
-	s2 = programVersion.c_str();
-	_mkdir(s2);
+	
 	// Frames per second (FPS) of the input video
 	double FPS;
 	// Total number of frame of the input video
@@ -117,6 +115,12 @@ int main() {
 	debugSwitch = readBoolInput("Debug Mode(1/0)");
 	// Read video input from user
 	cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+
+	std::string overallFolder;
+	overallFolder = filename + "/" + programVersion;
+	const char *s2;
+	s2 = overallFolder.c_str();
+	_mkdir(s2);
 
 	//std::cout << "Now load dataset: " << filename << std::endl;
 	//// Read video input from user

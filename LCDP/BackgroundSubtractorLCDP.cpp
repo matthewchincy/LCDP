@@ -590,7 +590,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					if (clsNbMatchSwitch) {
 						// Compare with neighbour's model
 						// Neighbour matching size (Max: 7x7)
-						size_t nbMatchNo = std::floor((((*currDistThreshold) / 9) * 48));
+						size_t nbMatchNo = std::min(16.0f,std::floor((((*currDistThreshold) / 9) * 48)));
 
 						for (size_t nbIndex = 0; nbIndex < nbMatchNo; nbIndex++) {
 							// Neighbour pixel pointer
@@ -911,7 +911,13 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					}
 				}
 				else if (clsMatchingMethod) {
-					(*currPxDistance) = ((1 - MIN_DISTANCE_ALPHA)*(*currPxDistance)) + (MIN_DISTANCE_ALPHA*(*minLCDPDistance));
+					if (clsRGBDiffSwitch) {
+						(*currPxDistance) = ((1 - MIN_DISTANCE_ALPHA)*(*currPxDistance)) + (MIN_DISTANCE_ALPHA*(*minRGBDistance));
+					}
+					else {
+						(*currPxDistance) = ((1 - MIN_DISTANCE_ALPHA)*(*currPxDistance)) + (MIN_DISTANCE_ALPHA*(*minLCDPDistance));
+					}
+					
 
 					bool check1 = (*lastFGMask) | (((*currPxDistance) < UNSTABLE_REG_RATIO_MIN) && (*currFGMask));
 					bool check2 = check1 && ((*currUpdateRate) < upLearningRateUpperCap);
@@ -946,24 +952,27 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::Mat compensationResult;
 		resCurrFGMask.copyTo(resLastRawFGMask);
 		cv::Mat element = cv::getStructuringElement(0, cv::Size(5, 5));
-		cv::Mat element2 = cv::getStructuringElement(cv::MORPH_RECT,
-			cv::Size(2 * 3 + 1, 2 * 3 + 1));
-		cv::Mat element3 = cv::getStructuringElement(cv::MORPH_RECT,
-			cv::Size(2 * 5 + 1, 2 * 5 + 1));
-		cv::Mat element4 = cv::getStructuringElement(cv::MORPH_RECT,
-			cv::Size(1, 2 * 4 + 1));
+		//cv::Mat element2 = cv::getStructuringElement(cv::MORPH_RECT,
+		//	cv::Size(2 * 3 + 1, 2 * 3 + 1));
+		//cv::Mat element3 = cv::getStructuringElement(cv::MORPH_RECT,
+		//	cv::Size(2 * 5 + 1, 2 * 5 + 1));
+		//cv::Mat element4 = cv::getStructuringElement(cv::MORPH_RECT,
+		//	cv::Size(1, 2 * 4 + 1));
 		// 1st round
 		cv::Mat tempCurrFGMask;
 		resCurrFGMask.copyTo(tempCurrFGMask);
 		cv::Mat reconstructLine = BorderLineReconst(resCurrFGMask);
+		cv::Mat fillHolesFilter = DarkPixelGenerator(inputImg);
 		compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
-		cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_CLOSE, element);
+		cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_OPEN, element);
 		resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
 		cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
 		resFGMaskFloodedHoles = ContourFill(resFGMaskFloodedHoles);
+		cv::bitwise_and(resFGMaskFloodedHoles, fillHolesFilter, resFGMaskFloodedHoles);
 		cv::erode(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
-		cv::bitwise_or(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
-		cv::bitwise_or(resCurrFGMask, resFGMaskPreFlood, resCurrFGMask);
+
+		//cv::bitwise_and(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
+		cv::bitwise_or(resFGMaskFloodedHoles, resFGMaskPreFlood, resCurrFGMask);
 		cv::bitwise_or(resCurrFGMask, compensationResult, resCurrFGMask);
 		// 2nd round
 		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element2);
@@ -989,9 +998,9 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		//cv::bitwise_and(resCurrFGMask, tempCurrFGMask, resCurrFGMask);
 
 		cv::medianBlur(resCurrFGMask, resLastFGMask, postMedianFilterSize);
-		reconstructLine = BorderLineReconst(resLastFGMask);
-		cv::bitwise_or(reconstructLine, resLastFGMask, resLastFGMask);
-		resLastFGMask = ContourFill(resLastFGMask);
+		//reconstructLine = BorderLineReconst(resLastFGMask);
+		//cv::bitwise_or(reconstructLine, resLastFGMask, resLastFGMask);
+		//resLastFGMask = ContourFill(resLastFGMask);
 		resLastFGMask.copyTo(resCurrFGMask);
 		resT_1FGMask.copyTo(resT_2FGMask);
 		resLastFGMask.copyTo(resT_1FGMask);
@@ -1312,12 +1321,13 @@ bool BackgroundSubtractorLCDP::LCDPMatching(DescriptorStruct *bgWord, Descriptor
 bool BackgroundSubtractorLCDP::RGBMatching(const int bgRGB[], const int currRGB[], const double RGBThreshold, float &minDistance)
 {
 	bool result = false;
-	int distance = UINT_MAX;
+	uint distance = UINT_MAX;
 	for (int channel = 0; channel < 3; channel++) {
-		const int tempDistance = std::abs(bgRGB[channel] - currRGB[channel]);
+		const uint tempDistance = std::abs(bgRGB[channel] - currRGB[channel]);
 		distance = tempDistance < distance ? tempDistance : distance;
 		if (tempDistance > RGBThreshold) {
 			result = true;
+			break;
 		}
 	}
 	minDistance = distance / UINT_MAX;
@@ -1476,24 +1486,28 @@ cv::Mat BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat inputImg) {
 	size_t pxPointer = 0;
 	for (size_t pxPointer = 0; pxPointer < frameInitTotalPixel; ++pxPointer) {
 		// Current distance threshold
-		float * distThreshold = (float*)(resDistThreshold.data + (pxPointer * 4));
+		//float * distThreshold = (float*)(resDistThreshold.data + (pxPointer * 4));
 		// RGB descriptor threshold
-		const double RGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*distThreshold)));
+		//const double RGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*distThreshold)));
 		bool result = false;
 		for (int channel = 0; channel < 3; channel++) {
 			currRgb[channel] = inputImg.data[(pxPointer * 3) + channel];
 			lastRgb[channel] = resLastImg.data[(pxPointer * 3) + channel];
-			if (double(lastRgb[channel] - currRgb[channel]) < (70)) {
+			//if (double(lastRgb[channel] - currRgb[channel]) < (70)) {
+			//	result = true;
+			//}
+			if (std::abs(double(lastRgb[channel] - currRgb[channel])) >10) {
 				result = true;
+				break;
 			}
-			/*if (std::abs(double(lastRgb[channel] - currRgb[channel])) <10) {
-				result = true;
-			}*/
 		}
-		float distanceDump;
-		bool RGBMatch = !RGBMatching(lastRgb, currRgb, 10, distanceDump);
-		bool DarkPixel = !result;
-		if (RGBMatch | DarkPixel) {
+		//float distanceDump;
+		//bool RGBMatch = !RGBMatching(lastRgb, currRgb, 10, distanceDump);
+		//bool DarkPixel = !result;
+		//if (RGBMatch | DarkPixel) {
+		//	output.data[pxPointer] = 255;
+		//}
+		if (result) {
 			output.data[pxPointer] = 255;
 		}
 	}

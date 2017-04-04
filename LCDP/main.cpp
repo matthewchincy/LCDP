@@ -18,8 +18,8 @@ bool readBoolInput(std::string question);
 // Read video input
 cv::VideoCapture readVideoInput(std::string question, std::string *filename,
 	double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE);
-cv::VideoCapture readVideoInput2(std::string question, std::string *filename, double *FPS,
-	double *FRAME_COUNT, cv::Size *FRAME_SIZE);
+cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE);
+
 // Get current date/time, format is DDMMYYHHmmss
 const std::string currentDateTimeStamp(time_t * now);
 // Get current date/time, format is DD-MM-YY HH:mm:ss
@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "LCDP Test Thres Full NEW V2";
+const std::string programVersion = "RGB Full Test";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -50,98 +50,53 @@ time_t tempStartTime;
 time_t tempFinishTime;
 int main() {
 	std::cout << "Program Version: " << programVersion << std::endl;
-	
+
 	// Frames per second (FPS) of the input video
 	double FPS;
 	// Total number of frame of the input video
 	double FRAME_COUNT;
 	// Frame size of the input video
 	cv::Size FRAME_SIZE;
-	double ratio[2] = { 0.15,0.2 };
+	//double ratio[2] = { 0.15,0.2 };
+	double ratio[1] = { 0.15 };
 	// Input LCDP threshold (0-1)
 	//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
-	double LCDPThresh[4] = { 0.32,0.38,0.45,0.5 };
+	//double LCDPThresh[4] = { 0.32,0.38,0.45,0.5 };
+	double LCDPThresh[1] = { 0.45 };
 	// Words No
-	double WordsNoList[3] = { 20,25,30 };
+	//double WordsNoList[3] = { 20,25,30 };
+	double WordsNoList[1] = { 30 };
 	// Matching threshold
-	double MatchingThresholdList[4] = { 2,3,4,5 };
+	//double MatchingThresholdList[4] = { 2,3,4,5 };
+	double MatchingThresholdList[1] = { 4 };
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
 	float DynamicRateIncrease[1] = { 0.8f };
 	// Feedback V(x) Decrement
 	//float DynamicRateDecrease[3] = { 0.4f,0.3f,0.1f };
-	float DynamicRateDecrease[1] = { 0.4f};
-
-	//for (size_t datasetIndex = 0;datasetIndex < 8;datasetIndex++) {
-		// Video file name
-	std::string filename;
-	//switch (datasetIndex) {
-	//	case 0: filename = "bungalows";
-	//		break;
-	//	case 1: filename = "canoe";
-	//		break;
-	//	case 2:filename = "fall";
-	//		break;
-	//	case 3:filename = "cubicle";
-	//		break;
-	//	case 4: filename = "traffic";
-	//		break;
-	//	case 5:filename = "sofa";
-	//		break;
-	//	case 6: filename = "boats";
-	//		break;
-	//	case 7: filename = "fountain01";
-	//		break;
-	//	default:
-	//		std::cout << "Error occurs!";
-	//		break;
-	//}
-
+	float DynamicRateDecrease[1] = { 0.4f };
 
 	// Show input frame switch
 	showInputSwitch = readBoolInput("Show input frame(1/0)");
+	//showInputSwitch = false;
 	// Show output frame switch
 	showOutputSwitch = readBoolInput("Show output frame(1/0)");
+	//showOutputSwitch = false;
 	// Save result switch
 	saveResultSwitch = readBoolInput("Save result(1/0)");
+	//saveResultSwitch = true;
 	// Evaluate result switch
 	evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
+	// evaluateResultSwitch = true;
+
 	// Ratio calculation method - false:Old, true:new
 	bool inputDescRatioCalculationMethod = readBoolInput("Ratio calculation method - 0:Old, 1:new");
 	// Classify method - false:Old, true:new
 	bool inputMatchingMethod = readBoolInput("Classify method - 0:Old, 1:new");
 	// Debug switch
 	debugSwitch = readBoolInput("Debug Mode(1/0)");
-	// Read video input from user
-	cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-
-	std::string overallFolder;
-	overallFolder = filename + "/" + programVersion;
-	const char *s2;
-	s2 = overallFolder.c_str();
-	_mkdir(s2);
-	std::ofstream myfile;
-	myfile.open(overallFolder + "/parameter.csv", std::ios::app);
-	myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
-	myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,RGB Dark Detect, LCD Detect, LCD And Or, LCDP Threshold, Max LCDP Threshold,";
-	myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Initial Update Rate, Random Update Switch,";
-	myfile << "Update NB No, Feedback Switch,Initial R, V Inc, V Desc, T Inc, T Desc,T Min, T Max, R Inc, Words, Recall, Precision, FMeasure\n";
-	myfile.close();
-	//std::cout << "Now load dataset: " << filename << std::endl;
-	//// Read video input from user
-	//cv::VideoCapture videoCapture = readVideoInput2("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-	//// Show input frame switch
-	//showInputSwitch = false;
-	//// Show output frame switch
-	//showOutputSwitch = false;
-	//// Save result switch
-	//saveResultSwitch = true;
-	//// Evaluate result switch
-	//evaluateResultSwitch = true;
-	//// Debug switch
 	//debugSwitch = false;
-	
 	// Debug starting frame index
 	int debugFrameIndex = 0;
 	// Debug x-point
@@ -157,177 +112,230 @@ int main() {
 		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
 
 	}
-	for (int lcdpIndex = 0; lcdpIndex < 4; lcdpIndex++) {
-		std::cout << "LCDP:" << LCDPThresh[lcdpIndex] << std::endl;
-		double inputLCDPThreshold = LCDPThresh[lcdpIndex];
-		for (int ratioIndex = 0; ratioIndex < 2; ratioIndex++) {
-			std::cout << "Ratio:" << ratio[ratioIndex] << std::endl;
-			double inputDescColourDiffRatioInit = ratio[ratioIndex];
-			for (int wordNoIndex = 0; wordNoIndex < 3; wordNoIndex++) {
-				// Total number of words per pixel
-				size_t Words_No = WordsNoList[wordNoIndex];
-				std::cout << "Words No:" << Words_No << std::endl;
-				for (int matchIndex = 0; matchIndex < 4; matchIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex < 10; datasetIndex++) {
+		// Video file name
+		std::string filename;
+		switch (datasetIndex) {
+		case 0: filename = "bungalows";
+			break;
+		case 1: filename = "canoe";
+			break;
+		case 2:filename = "cubicle";
+			break;
+		case 3: filename = "traffic";
+			break;
+		case 4:filename = "sofa";
+			break;
+		case 5: filename = "boats";
+			break;
+		case 6: filename = "highway";
+			break;
+		case 7: filename = "office";
+			break;
+		case 8: filename = "fountain01";
+			break;
+		case 9:filename = "fall";
+			break;
+		default:
+			std::cout << "Error occurs!";
+			break;
+		}
+		// Read video input from user
+		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		cv::VideoCapture videoCapture = readVideoInput2(&filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
+		std::cout << "Now load dataset: " << filename << std::endl;
+
+		std::string overallFolder;
+		overallFolder = filename + "/" + programVersion;
+		const char *s2;
+		s2 = overallFolder.c_str();
+		_mkdir(s2);
+		std::ofstream myfile;
+		myfile.open(overallFolder + "/parameter.csv", std::ios::app);
+		myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
+		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,RGB Dark Detect, LCD Detect, LCD And Or, LCDP Threshold, Max LCDP Threshold,";
+		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Initial Update Rate, Random Update Switch,";
+		myfile << "Update NB No, Feedback Switch,Initial R, V Inc, V Desc, T Inc, T Desc,T Min, T Max, R Inc, Words, Recall, Precision, FMeasure\n";
+		myfile.close();
+
+		for (int lcdpIndex = 0; lcdpIndex < (sizeof(LCDPThresh) / sizeof(double)); lcdpIndex++) {
+			std::cout << "LCDP:" << LCDPThresh[lcdpIndex] << std::endl;
+			double inputLCDPThreshold = LCDPThresh[lcdpIndex];
+
+			for (int ratioIndex = 0; ratioIndex < (sizeof(ratio) / sizeof(double)); ratioIndex++) {
+				std::cout << "Ratio:" << ratio[ratioIndex] << std::endl;
+				double inputDescColourDiffRatioInit = ratio[ratioIndex];
+
+				for (int wordNoIndex = 0; wordNoIndex < (sizeof(WordsNoList) / sizeof(double)); wordNoIndex++) {
 					// Total number of words per pixel
-					int matchingThreshold = MatchingThresholdList[matchIndex];
-					std::cout << "Matching Threshold:" << matchingThreshold << std::endl;
-					for (int vIncIndex = 0; vIncIndex < 1; vIncIndex++) {
-						// Feedback V(x) Increment
-						float inputDynamicRateIncrease = DynamicRateIncrease[vIncIndex];
-						std::cout << "V Inc:" << inputDynamicRateIncrease << std::endl;
-						for (int vDecIndex = 0; vDecIndex < 1; vDecIndex++) {
-							// Feedback V(x) Decrement
-							float inputDynamicRateDecrease = DynamicRateDecrease[vDecIndex];
-							std::cout << "V Dec:" << inputDynamicRateDecrease << std::endl;
-							//// Input LCDP threshold (0-1)
-							//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
-							// Input frame
-							cv::Mat inputFrame;
-							// Foreground Mask
-							cv::Mat fgMask;
+					size_t Words_No = WordsNoList[wordNoIndex];
+					std::cout << "Words No:" << Words_No << std::endl;
 
-							// Region of interest frame
-							cv::Mat ROI_FRAME;
-							ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
-							ROI_FRAME = cv::Scalar_<uchar>(255);
-							if (showInputSwitch) {
-								// Display input video windows
-								cv::namedWindow("Input Video");
-							}
-							if (showOutputSwitch) {
-								// Display results windows
-								cv::namedWindow("Results");
-							}
+					for (int matchIndex = 0; matchIndex < (sizeof(MatchingThresholdList) / sizeof(double)); matchIndex++) {
+						// Total number of words per pixel
+						int matchingThreshold = MatchingThresholdList[matchIndex];
+						std::cout << "Matching Threshold:" << matchingThreshold << std::endl;
 
-							/****Define Threshold****/
+						for (int vIncIndex = 0; vIncIndex < (sizeof(DynamicRateIncrease) / sizeof(float)); vIncIndex++) {
+							// Feedback V(x) Increment
+							float inputDynamicRateIncrease = DynamicRateIncrease[vIncIndex];
+							std::cout << "V Inc:" << inputDynamicRateIncrease << std::endl;
 
-							/*=====PRE PROCESS Parameters=====*/
-							bool PreSwitch = true;
+							for (int vDecIndex = 0; vDecIndex < (sizeof(DynamicRateDecrease)/sizeof(float)); vDecIndex++) {
+								int a = sizeof(DynamicRateDecrease) / sizeof(float);
+								// Feedback V(x) Decrement
+								float inputDynamicRateDecrease = DynamicRateDecrease[vDecIndex];
+								std::cout << "V Dec:" << inputDynamicRateDecrease << std::endl;
 
-							/*=====CLASSIFIER Parameters=====*/
-							// RGB detection switch
-							bool RGBDiffSwitch = false;
-							// RGB differences threshold
-							double RGBThreshold = 40;
-							// RGB bright pixel switch
-							bool RGBBrightPxSwitch = false;
-							// LCDP detection switch
-							bool LCDPDiffSwitch = true;
-							// LCDP differences threshold
-							double LCDPThreshold = inputLCDPThreshold;
-							// Maximum number of LCDP differences threshold
-							double LCDPMaxThreshold = 0.7;
-							// LCDP detection AND (true) OR (false) switch
-							bool AndOrSwitch = false;
-							// Neighbourhood matching switch
-							bool NbMatchSwitch = true;
+								//// Input LCDP threshold (0-1)
+								//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
+								// Input frame
+								cv::Mat inputFrame;
+								// Foreground Mask
+								cv::Mat fgMask;
 
-							/*=====UPDATE Parameters=====*/
-							// Random replace model switch
-							bool RandomReplaceSwitch = true;
-							// Random update neighbourhood model switch
-							bool RandomUpdateNbSwitch = true;
-							// Feedback loop switch
-							bool FeedbackSwitch = true;
-
-							// Feedback T(x) Increment
-							float inputUpdateRateIncrease = 0.5f;
-							// Feedback T(x) Decrement
-							float inputUpdateRateDecrease = 0.25f;
-							// Feedback T(x) Lowest
-							float inputUpdateRateLowest = 2.0f;
-							// Feedback T(x) Highest
-							float inputUpdateRateHighest = 255.0f;
-
-							/*=====POST PROCESS Parameters=====*/
-							bool PostSwitch = false;
-
-							// Read first frame from video
-							videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
-							videoCapture >> inputFrame;
-
-							// Current date/time based on current system
-							tempStartTime = time(0);
-							// Program start time
-							std::string startTime = currentDateTimeStamp(&tempStartTime);
-							std::string folderName;
-							// Current process result folder name
-							if (inputDescRatioCalculationMethod) {
-								folderName = filename + "/" + programVersion + "/New-" + programVersion + "-" + startTime;
-							}
-							else {
-								folderName = filename + "/" + programVersion + "/Old-" + programVersion + "-" + startTime;
-							}
-
-							// Declare background subtractor construtor
-							BackgroundSubtractorLCDP backgroundSubtractorLCDP(folderName, Words_No, PreSwitch,
-								inputDescColourDiffRatioInit, inputDescRatioCalculationMethod, RGBDiffSwitch,
-								RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold, inputMatchingMethod, matchingThreshold,
-								AndOrSwitch, NbMatchSwitch, ROI_FRAME, FRAME_SIZE, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch,
-								inputDynamicRateIncrease, inputDynamicRateDecrease, inputUpdateRateIncrease, inputUpdateRateDecrease,
-								inputUpdateRateLowest, inputUpdateRateHighest, PostSwitch);
-
-							// Initialize background subtractor
-							backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
-
-							const std::string currFolderName = folderName;
-
-							const char *s1;
-							if (saveResultSwitch) {
-								s1 = folderName.c_str();
-								_mkdir(s1);
-								SaveParameter(filename, folderName);
-								backgroundSubtractorLCDP.SaveParameter(filename, folderName);
-								folderName += "/results";
-								s1 = folderName.c_str();
-								_mkdir(s1);
-							}
-
-							char s[25];
-							for (int currFrameIndex = 1; currFrameIndex <= FRAME_COUNT; currFrameIndex++) {
-								// Process current frame
-								backgroundSubtractorLCDP.Process(inputFrame, fgMask);
+								// Region of interest frame
+								cv::Mat ROI_FRAME;
+								ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
+								ROI_FRAME = cv::Scalar_<uchar>(255);
 								if (showInputSwitch) {
-									cv::imshow("Input Video", inputFrame);
+									// Display input video windows
+									cv::namedWindow("Input Video");
 								}
 								if (showOutputSwitch) {
-									cv::imshow("Results", fgMask);
+									// Display results windows
+									cv::namedWindow("Results");
 								}
-								if (saveResultSwitch) {
-									std::string saveFolder;
-									sprintf(s, "/bin%06d.png", (currFrameIndex));
-									saveFolder = folderName + s;
-									cv::imwrite(saveFolder, fgMask);
-								}
-								// If 'esc' key is pressed, break loop
-								if (cv::waitKey(1) == 27)
-								{
-									std::cout << "Program ended by users." << std::endl;
-									break;
-								}
-								bool inputCheck = videoCapture.read(inputFrame);
-								if (!inputCheck && (currFrameIndex < FRAME_COUNT)) {
-									std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
-									return -1;
-								}
-							}
 
-							tempFinishTime = time(0);
-							GenerateProcessTime(FRAME_COUNT, currFolderName);
+								/****Define Threshold****/
+								/*=====PRE PROCESS Parameters=====*/
+								bool PreSwitch = true;
 
-							std::cout << "Background subtraction completed" << std::endl;
+								/*=====CLASSIFIER Parameters=====*/
+								// RGB detection switch
+								bool RGBDiffSwitch = true;
+								// RGB differences threshold
+								double RGBThreshold = 30;
+								// RGB bright pixel switch
+								bool RGBBrightPxSwitch = false;
+								// LCDP detection switch
+								bool LCDPDiffSwitch = false;
+								// LCDP differences threshold
+								double LCDPThreshold = inputLCDPThreshold;
+								// Maximum number of LCDP differences threshold
+								double LCDPMaxThreshold = 0.7;
+								// LCDP detection AND (true) OR (false) switch
+								bool AndOrSwitch = false;
+								// Neighbourhood matching switch
+								bool NbMatchSwitch = true;
 
-							if (evaluateResultSwitch) {
-								if (saveResultSwitch) {
+								/*=====UPDATE Parameters=====*/
+								// Random replace model switch
+								bool RandomReplaceSwitch = true;
+								// Random update neighbourhood model switch
+								bool RandomUpdateNbSwitch = true;
+								// Feedback loop switch
+								bool FeedbackSwitch = true;
 
-									std::cout << "Now starting evaluate the processed result..." << std::endl;
-									EvaluateResult(filename, folderName, currFolderName);
+								// Feedback T(x) Increment
+								float inputUpdateRateIncrease = 0.5f;
+								// Feedback T(x) Decrement
+								float inputUpdateRateDecrease = 0.25f;
+								// Feedback T(x) Lowest
+								float inputUpdateRateLowest = 2.0f;
+								// Feedback T(x) Highest
+								float inputUpdateRateHighest = 255.0f;
+
+								/*=====POST PROCESS Parameters=====*/
+								bool PostSwitch = false;
+
+								// Read first frame from video
+								videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
+								videoCapture >> inputFrame;
+
+								// Current date/time based on current system
+								tempStartTime = time(0);
+								// Program start time
+								std::string startTime = currentDateTimeStamp(&tempStartTime);
+								std::string folderName;
+								// Current process result folder name
+								if (inputDescRatioCalculationMethod) {
+									folderName = filename + "/" + programVersion + "/New-" + programVersion + "-" + startTime;
 								}
 								else {
-									std::cout << "No saved results for evaluation" << std::endl;
+									folderName = filename + "/" + programVersion + "/Old-" + programVersion + "-" + startTime;
 								}
-							}
 
+								// Declare background subtractor construtor
+								BackgroundSubtractorLCDP backgroundSubtractorLCDP(folderName, Words_No, PreSwitch,
+									inputDescColourDiffRatioInit, inputDescRatioCalculationMethod, RGBDiffSwitch,
+									RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold, inputMatchingMethod, matchingThreshold,
+									AndOrSwitch, NbMatchSwitch, ROI_FRAME, FRAME_SIZE, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch,
+									inputDynamicRateIncrease, inputDynamicRateDecrease, inputUpdateRateIncrease, inputUpdateRateDecrease,
+									inputUpdateRateLowest, inputUpdateRateHighest, PostSwitch);
+
+								// Initialize background subtractor
+								backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
+
+								const std::string currFolderName = folderName;
+
+								const char *s1;
+								if (saveResultSwitch) {
+									s1 = folderName.c_str();
+									_mkdir(s1);
+									SaveParameter(overallFolder, folderName);
+									backgroundSubtractorLCDP.SaveParameter(overallFolder, folderName);
+									folderName += "/results";
+									s1 = folderName.c_str();
+									_mkdir(s1);
+								}
+
+								char s[25];
+								for (int currFrameIndex = 1; currFrameIndex <= FRAME_COUNT; currFrameIndex++) {
+									// Process current frame
+									backgroundSubtractorLCDP.Process(inputFrame, fgMask);
+									if (showInputSwitch) {
+										cv::imshow("Input Video", inputFrame);
+									}
+									if (showOutputSwitch) {
+										cv::imshow("Results", fgMask);
+									}
+									if (saveResultSwitch) {
+										std::string saveFolder;
+										sprintf(s, "/bin%06d.png", (currFrameIndex));
+										saveFolder = folderName + s;
+										cv::imwrite(saveFolder, fgMask);
+									}
+									// If 'esc' key is pressed, break loop
+									if (cv::waitKey(1) == 27)
+									{
+										std::cout << "Program ended by users." << std::endl;
+										break;
+									}
+									bool inputCheck = videoCapture.read(inputFrame);
+									if (!inputCheck && (currFrameIndex < FRAME_COUNT)) {
+										std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
+										return -1;
+									}
+								}
+
+								tempFinishTime = time(0);
+								GenerateProcessTime(FRAME_COUNT, currFolderName);
+
+								std::cout << "Background subtraction completed" << std::endl;
+
+								if (evaluateResultSwitch) {
+									if (saveResultSwitch) {
+
+										std::cout << "Now starting evaluate the processed result..." << std::endl;
+										EvaluateResult(filename, folderName, overallFolder);
+									}
+									else {
+										std::cout << "No saved results for evaluation" << std::endl;
+									}
+								}
+
+							}
 						}
 					}
 				}
@@ -368,7 +376,6 @@ void SaveParameter(std::string filename, std::string folderName) {
 	myfile << folderName;
 	myfile << "\n";
 	myfile.close();
-	//std::ofstream myfile;
 	myfile.open(filename + "/parameter.csv", std::ios::app);
 	myfile << programVersion << "," << folderName;
 	myfile.close();
@@ -461,7 +468,7 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 	std::cout << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
 	std::cout << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
 
-	myfile.open(filename + "/parameter.csv", std::ios::app);
+	myfile.open(currFolderName + "/parameter.csv", std::ios::app);
 	myfile << "," << std::setprecision(3) << std::fixed << recall << "," << std::setprecision(3) << std::fixed << precision << "," << std::setprecision(3) << std::fixed << FMeasure << "\n";
 	myfile.close();
 }
@@ -641,8 +648,7 @@ cv::VideoCapture readVideoInput(std::string question, std::string *filename, dou
 	return (videoCapture);
 }
 // Read video input
-cv::VideoCapture readVideoInput2(std::string question, std::string *filename, double *FPS,
-	double *FRAME_COUNT, cv::Size *FRAME_SIZE)
+cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE)
 {
 	// Video capture variable
 	cv::VideoCapture videoCapture;
@@ -653,8 +659,6 @@ cv::VideoCapture readVideoInput2(std::string question, std::string *filename, do
 	bool result = false;
 	do
 	{
-		/*std::cout << question << " :" << std::flush;
-		getline(std::cin, (*filename));*/
 		bool check = false;
 		for (size_t formatIndex = 0; formatIndex < 2; formatIndex++) {
 			switch (formatIndex) {
@@ -690,7 +694,6 @@ cv::VideoCapture readVideoInput2(std::string question, std::string *filename, do
 		}
 		else {
 			std::cout << "\nVideo having problem. Cannot open the video file. Please re-enter valid filename" << std::endl;
-			std::cin.sync();
 		}
 	} while (!valid);
 

@@ -11,7 +11,7 @@ public:
 	BackgroundSubtractorLCDP(std::string folderName, size_t inputWordsNo, bool inputPreSwitch,
 		double inputDescColourDiffRatioInit, bool inputDescRatioCalculationMethod, bool inputRGBDiffSwitch,
 		double inputRGBThreshold,bool inputLCDPDiffSwitch, double inputLCDPThreshold, double inputUpLCDPThreshold,
-		double inputLCDPMaxThreshold, bool inputMatchingMethod, int inputMatchThreshold, bool inputAndOrSwitch, bool inputNbMatchSwitch,
+		double inputLCDPMaxThreshold, bool inputMatchingMethod, int inputMatchThreshold, bool inputNbMatchSwitch,
 		cv::Mat inputROI, cv::Size inputFrameSize,
 		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch,
 		float inputDynamicRateIncrease, float inputDynamicRateDecrease, float inputUpdateRateIncrease, float inputUpdateRateDecrease,
@@ -138,7 +138,7 @@ protected:
 	const bool clsLCDPDiffSwitch;
 	// LCDP differences threshold
 	double clsLCDPThreshold;
-	// UP LCDP differences threshold
+	// Up LCDP differences threshold
 	double clsUpLCDPThreshold;
 	// Maximum number of LCDP differences threshold
 	const double clsLCDPMaxThreshold;
@@ -198,29 +198,37 @@ protected:
 	// Feedback T(x) Decrement
 	float upUpdateRateDecrease;
 	// Feedback T(x) Lowest
-	float upUpdateRateLowest;
+	float upUpdateRateLowerCap;
 	// Feedback T(x) Highest
-	float upUpdateRateHighest;
+	float upUpdateRateUpperCap;
 
 	/*=====RESULTS=====*/
 	// Per-pixel distance thresholds ('R(x)', but used as a relative value to determine both 
 	// intensity and descriptor variation thresholds)
-	cv::Mat resDistThreshold;
-	cv::Mat resDistThresholdRGB;
+	cv::Mat resLCDPDistThreshold;
+	cv::Mat resRGBDistThreshold;
 	// Per-pixel dynamic learning rate ('V(x)')
-	cv::Mat resDynamicRate;
-	cv::Mat resDynamicRateRGB;
+	cv::Mat resLCDPDynamicRate;
+	cv::Mat resRGBDynamicRate;
 	// Per-pixel update rates('T(x)', which contains pixel - level 'sigmas')
-	cv::Mat resUpdateRate;
-	
+	cv::Mat resLCDPUpdateRate;
+	cv::Mat resRGBUpdateRate;
+
 	// Minimum LCDP distance
 	cv::Mat resMinLCDPDistance;
 	// Minimum RGB distance
 	cv::Mat resMinRGBDistance;
-	// Current pixel distance
-	cv::Mat resCurrPxDistance;
+	// Current LCDP pixel distance
+	cv::Mat resCurrLCDPPxDistance;
+	// Current LCDP pixel distance
+	cv::Mat resCurrRGBPxDistance;
+
 	// Current foreground mask
 	cv::Mat resCurrFGMask;
+	// Current LCDP foreground mask
+	cv::Mat resCurrLCDPFGMask;
+	// Current Up LCDP foreground mask
+	cv::Mat resCurrUpLCDPFGMask;
 	// Current RGB foreground mask
 	cv::Mat resCurrRGBFGMask;
 	// Previous foreground mask

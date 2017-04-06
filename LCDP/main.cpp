@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "RGB and LCDP";
+const std::string programVersion = "RGB and LCDP V1 No Post";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -63,7 +63,7 @@ int main() {
 	//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
 	//double LCDPThresh[4] = { 0.32,0.38,0.45,0.5 };
-	double LCDPThresh[1] = { 0.45 };
+	double LCDPThresh[1] = { 0.6 };
 	// Words No
 	//double WordsNoList[3] = { 20,25,30 };
 	double WordsNoList[1] = { 30 };
@@ -153,9 +153,9 @@ int main() {
 		std::ofstream myfile;
 		myfile.open(overallFolder + "/parameter.csv", std::ios::app);
 		myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
-		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,RGB Dark Detect, LCD Detect, LCD And Or, LCDP Threshold, Max LCDP Threshold,";
-		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Initial Update Rate, Random Update Switch,";
-		myfile << "Update NB No, Feedback Switch,Initial R, V Inc, V Desc, T Inc, T Desc,T Min, T Max, R Inc, Words, Recall, Precision, FMeasure\n";
+		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCD And Or, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
+		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Random Update Switch,";
+		myfile << "Update NB No, Feedback Switch,V Inc, V Desc, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
 		myfile.close();
 
 		for (int lcdpIndex = 0; lcdpIndex < (sizeof(LCDPThresh) / sizeof(double)); lcdpIndex++) {
@@ -164,7 +164,7 @@ int main() {
 
 			for (int ratioIndex = 0; ratioIndex < (sizeof(ratio) / sizeof(double)); ratioIndex++) {
 				std::cout << "Ratio:" << ratio[ratioIndex] << std::endl;
-				double inputDescColourDiffRatioInit = ratio[ratioIndex];
+				double inputDescColourDiffRatio = ratio[ratioIndex];
 
 				for (int wordNoIndex = 0; wordNoIndex < (sizeof(WordsNoList) / sizeof(double)); wordNoIndex++) {
 					// Total number of words per pixel
@@ -181,7 +181,7 @@ int main() {
 							float inputDynamicRateIncrease = DynamicRateIncrease[vIncIndex];
 							std::cout << "V Inc:" << inputDynamicRateIncrease << std::endl;
 
-							for (int vDecIndex = 0; vDecIndex < (sizeof(DynamicRateDecrease)/sizeof(float)); vDecIndex++) {
+							for (int vDecIndex = 0; vDecIndex < (sizeof(DynamicRateDecrease) / sizeof(float)); vDecIndex++) {
 								int a = sizeof(DynamicRateDecrease) / sizeof(float);
 								// Feedback V(x) Decrement
 								float inputDynamicRateDecrease = DynamicRateDecrease[vDecIndex];
@@ -215,17 +215,15 @@ int main() {
 								// RGB detection switch
 								bool RGBDiffSwitch = true;
 								// RGB differences threshold
-								double RGBThreshold = 15;
-								// RGB bright pixel switch
-								bool RGBBrightPxSwitch = false;
+								double RGBThreshold = 30;
 								// LCDP detection switch
 								bool LCDPDiffSwitch = true;
 								// LCDP differences threshold
 								double LCDPThreshold = inputLCDPThreshold;
+								// Up LCDP differences threshold
+								double upLCDPThreshold = 0.7;
 								// Maximum number of LCDP differences threshold
 								double LCDPMaxThreshold = 0.7;
-								// LCDP detection AND (true) OR (false) switch
-								bool AndOrSwitch = false;
 								// Neighbourhood matching switch
 								bool NbMatchSwitch = true;
 
@@ -247,7 +245,7 @@ int main() {
 								float inputUpdateRateHighest = 255.0f;
 
 								/*=====POST PROCESS Parameters=====*/
-								bool PostSwitch = true;
+								bool PostSwitch = false;
 
 								// Read first frame from video
 								videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
@@ -268,25 +266,27 @@ int main() {
 
 								// Declare background subtractor construtor
 								BackgroundSubtractorLCDP backgroundSubtractorLCDP(folderName, Words_No, PreSwitch,
-									inputDescColourDiffRatioInit, inputDescRatioCalculationMethod, RGBDiffSwitch,
-									RGBThreshold, RGBBrightPxSwitch, LCDPDiffSwitch, LCDPThreshold, LCDPMaxThreshold, inputMatchingMethod, matchingThreshold,
-									AndOrSwitch, NbMatchSwitch, ROI_FRAME, FRAME_SIZE, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch,
+									inputDescColourDiffRatio, inputDescRatioCalculationMethod, RGBDiffSwitch,
+									RGBThreshold, LCDPDiffSwitch, LCDPThreshold, upLCDPThreshold, LCDPMaxThreshold, inputMatchingMethod, matchingThreshold,
+									NbMatchSwitch, ROI_FRAME, FRAME_SIZE, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch,
 									inputDynamicRateIncrease, inputDynamicRateDecrease, inputUpdateRateIncrease, inputUpdateRateDecrease,
 									inputUpdateRateLowest, inputUpdateRateHighest, PostSwitch);
+
+
 
 								// Initialize background subtractor
 								backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
 
 								const std::string currFolderName = folderName;
-
+								std::string saveImgFolder = folderName;
 								const char *s1;
 								if (saveResultSwitch) {
 									s1 = folderName.c_str();
 									_mkdir(s1);
 									SaveParameter(overallFolder, folderName);
 									backgroundSubtractorLCDP.SaveParameter(overallFolder, folderName);
-									folderName += "/results";
-									s1 = folderName.c_str();
+									saveImgFolder += "/results";
+									s1 = saveImgFolder.c_str();
 									_mkdir(s1);
 								}
 
@@ -303,7 +303,7 @@ int main() {
 									if (saveResultSwitch) {
 										std::string saveFolder;
 										sprintf(s, "/bin%06d.png", (currFrameIndex));
-										saveFolder = folderName + s;
+										saveFolder = saveImgFolder + s;
 										cv::imwrite(saveFolder, fgMask);
 									}
 									// If 'esc' key is pressed, br	eak loop

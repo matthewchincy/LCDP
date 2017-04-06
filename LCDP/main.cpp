@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "RGB Full Test";
+const std::string programVersion = "RGB and LCDP";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -215,11 +215,11 @@ int main() {
 								// RGB detection switch
 								bool RGBDiffSwitch = true;
 								// RGB differences threshold
-								double RGBThreshold = 30;
+								double RGBThreshold = 15;
 								// RGB bright pixel switch
 								bool RGBBrightPxSwitch = false;
 								// LCDP detection switch
-								bool LCDPDiffSwitch = false;
+								bool LCDPDiffSwitch = true;
 								// LCDP differences threshold
 								double LCDPThreshold = inputLCDPThreshold;
 								// Maximum number of LCDP differences threshold
@@ -247,7 +247,7 @@ int main() {
 								float inputUpdateRateHighest = 255.0f;
 
 								/*=====POST PROCESS Parameters=====*/
-								bool PostSwitch = false;
+								bool PostSwitch = true;
 
 								// Read first frame from video
 								videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
@@ -306,7 +306,7 @@ int main() {
 										saveFolder = folderName + s;
 										cv::imwrite(saveFolder, fgMask);
 									}
-									// If 'esc' key is pressed, break loop
+									// If 'esc' key is pressed, br	eak loop
 									if (cv::waitKey(1) == 27)
 									{
 										std::cout << "Program ended by users." << std::endl;

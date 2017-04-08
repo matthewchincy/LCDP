@@ -247,6 +247,8 @@ protected:
 	cv::Mat resDarkPixel;
 	// Last image frame
 	cv::Mat resLastImg;
+	// Last Grayscale image frame
+	cv::Mat resLastGrayImg;
 
 	/*=====METHODS=====*/
 	/*=====DEFAULT methods=====*/

@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "RGB and LCDP V1 No Post";
+const std::string programVersion = "RGB and LCDP V1.2";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -63,13 +63,13 @@ int main() {
 	//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
 	//double LCDPThresh[4] = { 0.32,0.38,0.45,0.5 };
-	double LCDPThresh[1] = { 0.6 };
+	double LCDPThresh[1] = { 0.32};
 	// Words No
 	//double WordsNoList[3] = { 20,25,30 };
 	double WordsNoList[1] = { 30 };
 	// Matching threshold
 	//double MatchingThresholdList[4] = { 2,3,4,5 };
-	double MatchingThresholdList[1] = { 4 };
+	double MatchingThresholdList[1] = { 3 };
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
 	float DynamicRateIncrease[1] = { 0.8f };
@@ -153,7 +153,7 @@ int main() {
 		std::ofstream myfile;
 		myfile.open(overallFolder + "/parameter.csv", std::ios::app);
 		myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
-		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCD And Or, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
+		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
 		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Random Update Switch,";
 		myfile << "Update NB No, Feedback Switch,V Inc, V Desc, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
 		myfile.close();
@@ -245,7 +245,7 @@ int main() {
 								float inputUpdateRateHighest = 255.0f;
 
 								/*=====POST PROCESS Parameters=====*/
-								bool PostSwitch = false;
+								bool PostSwitch = true;
 
 								// Read first frame from video
 								videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
@@ -398,7 +398,7 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 		sprintf(s, "%06d.png", (startIndex));
 		//cv::Mat gtImg = cv::imread( "bungalows/groundtruth/gt000001.png");
 		cv::Mat gtImg = cv::imread(groundtruthFolder + "/gt" + s, CV_LOAD_IMAGE_GRAYSCALE);
-		cv::Mat resultImg = cv::imread(folderName + "/bin" + s, CV_LOAD_IMAGE_GRAYSCALE);
+		cv::Mat resultImg = cv::imread(folderName + "/results/bin" + s, CV_LOAD_IMAGE_GRAYSCALE);
 		for (size_t pxPointer = 0; pxPointer < (resultImg.rows*resultImg.cols); pxPointer++) {
 
 			double gtValue = gtImg.data[pxPointer];
@@ -447,7 +447,7 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 	const double PBC = 100.0 * (FN + FP) / (TP + FP + FN + TN);
 
 	std::ofstream myfile;
-	myfile.open(currFolderName + "/parameter.txt", std::ios::app);
+	myfile.open(folderName + "/parameter.txt", std::ios::app);
 	myfile << "\n<<<<<-STATISTICS  RESULTS->>>>>\n";
 	myfile << "TRUE POSITIVE(TP): " << std::setprecision(0) << std::fixed << TP << std::endl;
 	myfile << "FALSE POSITIVE(FP): " << std::setprecision(0) << std::fixed << FP << std::endl;

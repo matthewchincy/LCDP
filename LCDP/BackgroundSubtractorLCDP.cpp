@@ -271,6 +271,7 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	resFGMaskPreFlood = cv::Scalar_<uchar>::all(0);
 	// Last frame image
 	inputFrame.copyTo(resLastImg);
+	cv::cvtColor(inputFrame, resLastGrayImg, CV_RGB2GRAY);
 
 	// Pixel pointer index
 	size_t pxPointer = 0;
@@ -308,16 +309,16 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 // Program processing
 void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputImg)
 {
-	cv::Mat inputImgGray;
-	cv::cvtColor(inputImg, inputImgGray, CV_RGB2GRAY);
+	cv::Mat inputGrayImg;
+	cv::cvtColor(inputImg, inputGrayImg, CV_RGB2GRAY);
 	// PRE PROCESSING
 	if (preSwitch) {
 		cv::GaussianBlur(inputImg, inputImg, preGaussianSize, 0, 0);
 	}
 
 	// DETECTION PROCESS
-	// Generate a map to indicate dark pixel (1: Not dark pixel, 0: Dark pixel)
-	DarkPixelGenerator(inputImg, resLastImg, resDarkPixel);	
+	// Generate a map to indicate dark pixel (255: Not dark pixel, 0: Dark pixel)
+	DarkPixelGenerator(inputGrayImg, resLastGrayImg, resDarkPixel);	
 	for (size_t pxPointer = 0; pxPointer < frameInitTotalPixel; ++pxPointer) {
 		if (frameRoi.data[pxPointer]) {
 			// Descriptor Generator-Generate pixels' descriptor (RGB+LCDP)
@@ -394,10 +395,10 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					(*bgWord).frameCount += 1;
 					(*bgWord).q = frameIndex;
 
-					clsLCDPPotentialMatch++;
-					if (!upLCDPResult) {
-						clsUpLCDPPotentialMatch++;
-					}
+					clsLCDPPotentialMatch++;					
+				}
+				else if (!upLCDPResult) {
+					clsUpLCDPPotentialMatch++;
 				}
 
 				if (((*bgWord).frameCount > 0) && (!RGBResult)) {
@@ -448,7 +449,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					(*currLCDPDynamicRate) = std::max(1.0f, (*currLCDPDynamicRate) - upDynamicRateDecrease);
 				}
 				else {
-					if (clsUpLCDPPotentialMatch < clsMatchThreshold) {
+					if (clsUpLCDPPotentialMatch > (0.5*WORDS_NO)) {
 						(*currUpLCDPFGMask) = 255;
 					}
 					(*currLCDPFGMask) = 255;
@@ -554,21 +555,21 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 							if (clsNBPotentialMatch >= clsNBMatchThreshold) {
 								(*currLCDPFGMask) = 0;
 								(*currLCDPDynamicRate) += upDynamicRateIncrease;
-								break;
 							}
 							else {
-								if (clsUpLCDPPotentialMatch < clsMatchThreshold) {
+								if (clsUpLCDPPotentialMatch > (0.5*WORDS_NO)) {
 									(*currUpLCDPFGMask) = 255;
 								}
-								(*currLCDPFGMask) = 255;
 							}
 						}
 						if (nbIndex < nbRGBMatchNo) {
 							if (clsNBPotentialRGBMatch >= clsNBMatchThreshold) {
 								(*currRGBFGMask) = 0;
 								(*currRGBDynamicRate) += upDynamicRateIncrease;
-								break;
 							}
+						}
+						if ((*currLCDPFGMask) && (*currRGBFGMask)) {
+							break;
 						}
 					}
 				}
@@ -592,6 +593,12 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					else {
 						(*currFGMask) = 0;
 					}
+				}
+				else if ((!*currLCDPFGMask) && (!*currRGBFGMask)) {
+					(*currFGMask) = 0;
+				}
+				else if ((*currLCDPFGMask) && (*currRGBFGMask)) {
+					(*currFGMask) = 255;
 				}
 			}
 			// UPDATE PROCESS
@@ -797,18 +804,52 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::Mat reconstructLine = BorderLineReconst(resCurrFGMask);
 		//cv::Mat fillHolesFilter = DarkPixelGenerator(inputImg);
 		compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
-		cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_OPEN, element);
-		cv::morphologyEx(resFGMaskPreFlood, resFGMaskPreFlood, cv::MORPH_CLOSE, element);
-		resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
-		cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
-		resFGMaskFloodedHoles = ContourFill(resFGMaskFloodedHoles);
+		cv::erode(resCurrFGMask, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::dilate(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
+
+		//cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_OPEN, element);
+		//cv::erode(resCurrFGMask, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::dilate(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
+		//resCurrFGMask.copyTo(resFGMaskFloodedHoles);
+		//resCurrFGMask.copyTo(resFGMaskPreFlood);
+		//cv::medianBlur(resFGMaskFloodedHoles, resFGMaskFloodedHoles, postMedianFilterSize);
+		// 2nd round
+		//cv::Mat gradientResult;
+		//inputGrayImg.copyTo(gradientResult);
+		cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::erode(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
+		//cv::bitwise_not(resDarkPixel, resDarkPixel);
+		//cv::Canny(resDarkPixel, resDarkPixel, 0, 255, 3);
+		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 5);
+		//cv::bitwise_not(resDarkPixel, resDarkPixel);
+
+
+		//cv::morphologyEx(resDarkPixel, resDarkPixel, cv::MORPH_DILATE, element);
+		//cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
+		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element);
+		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::bitwise_and(resFGMaskFloodedHoles, resDarkPixel, resFGMaskFloodedHoles);
+		//cv::dilate(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::bitwise_not(gradientResult, gradientResult);
+		//cv::bitwise_and(gradientResult, resFGMaskFloodedHoles, resFGMaskFloodedHoles);
+		//cv::bitwise_and(gradientResult, gradientResult, resCurrFGMask);
+		//cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
+		//cv::medianBlur(resFGMaskFloodedHoles, resFGMaskFloodedHoles, postMedianFilterSize);
+		//reconstructLine = BorderLineReconst(resFGMaskFloodedHoles);
+		//cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
+		//cv::dilate(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::Mat(), cv::Point(-1, -1), 5);
+		//cv::morphologyEx(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::MORPH_CLOSE, element);
+		//cv::dilate(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::Mat(), cv::Point(-1, -1), 3);
+		resFGMaskFloodedHoles = ContourFill(resFGMaskPreFlood);
+		//cv::floodFill(resFGMaskFloodedHoles, cv::Point(0, 0), UCHAR_MAX);
 		//cv::bitwise_and(resFGMaskFloodedHoles, fillHolesFilter, resFGMaskFloodedHoles);
-		cv::erode(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::dilate(resFGMaskFloodedHoles, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
 
 		//cv::bitwise_and(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
-		cv::bitwise_or(resFGMaskFloodedHoles, resFGMaskPreFlood, resCurrFGMask);
-		cv::bitwise_or(resCurrFGMask, compensationResult, resCurrFGMask);
-		// 2nd round
+		cv::bitwise_and(resFGMaskFloodedHoles, resDarkPixel, resCurrFGMask);
+		//cv::bitwise_or(resCurrFGMask, compensationResult, resCurrFGMask);
+
 		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element2);
 		//cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
 		//resDarkPixel = DarkPixelGenerator(inputImg);
@@ -848,6 +889,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	resMinRGBDistance = cv::Scalar(1.0f);
 	// Update average image
 	resLastImg = (inputImg + (resLastImg*(frameIndex - 1))) / frameIndex;
+	resLastGrayImg = (inputGrayImg + (resLastGrayImg*(frameIndex - 1))) / frameIndex;
 }
 
 /*=====METHODS=====*/
@@ -1159,21 +1201,18 @@ void BackgroundSubtractorLCDP::RGBMatching(DescriptorStruct &bgWord, DescriptorS
 	}
 	minDistance = distance / 255;
 }
-// Dark Pixel generator (RETURN-1: Not dark pixel, 0: dark pixel)
-void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputImg, const cv::Mat &lastImg, cv::Mat &darkPixel) {
+// Dark Pixel generator (RETURN-255: Not dark pixel, 0: dark pixel)
+void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, const cv::Mat &lastGrayImg, cv::Mat &darkPixel) {
 	darkPixel = cv::Scalar_<uchar>::all(0);
-	// Store the pixel's RGB values
-	int currRgb[3];
-	int lastRgb[3];
+	// Store the pixel's intensity values
+	int currIntensityValue;
+	int lastIntensityValue;
 	size_t pxPointer = 0;
 	for (size_t pxPointer = 0; pxPointer < frameInitTotalPixel; ++pxPointer) {
-		for (int channel = 0; channel < 3; channel++) {
-			currRgb[channel] = inputImg.data[(pxPointer * 3) + channel];
-			lastRgb[channel] = lastImg.data[(pxPointer * 3) + channel];
-			if (double(lastRgb[channel] - currRgb[channel]) < 0) {
-				darkPixel.data[pxPointer] = 255;
-				break;
-			}
+		currIntensityValue = inputGrayImg.data[pxPointer];
+		lastIntensityValue = lastGrayImg.data[pxPointer];
+		if (!(((lastIntensityValue - currIntensityValue) > 0) && ((lastIntensityValue - currIntensityValue) < 110))) {
+			darkPixel.data[pxPointer] = 255;
 		}
 	}
 }

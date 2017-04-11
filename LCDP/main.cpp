@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "RGB and LCDP V1.2";
+const std::string programVersion = "RGB and LCDP V1.4 Test";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -63,7 +63,7 @@ int main() {
 	//double inputLCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
 	//double LCDPThresh[4] = { 0.32,0.38,0.45,0.5 };
-	double LCDPThresh[1] = { 0.32};
+	double LCDPThresh[1] = { 0.2};
 	// Words No
 	//double WordsNoList[3] = { 20,25,30 };
 	double WordsNoList[1] = { 30 };
@@ -112,7 +112,7 @@ int main() {
 		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
 
 	}
-	for (size_t datasetIndex = 0; datasetIndex < 10; datasetIndex++) {
+	for (size_t datasetIndex = 1; datasetIndex < 2; datasetIndex++) {
 		// Video file name
 		std::string filename;
 		switch (datasetIndex) {
@@ -215,7 +215,7 @@ int main() {
 								// RGB detection switch
 								bool RGBDiffSwitch = true;
 								// RGB differences threshold
-								double RGBThreshold = 30;
+								double RGBThreshold = 20;
 								// LCDP detection switch
 								bool LCDPDiffSwitch = true;
 								// LCDP differences threshold

@@ -282,7 +282,8 @@ protected:
 	void RGBMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord,
 		const double &RGBThreshold, float &minDistance, bool &result);
 	// Dark Pixel generator (RETURN-1: Not dark pixel, 0: dark pixel)
-	void DarkPixelGenerator(const cv::Mat &inputImg, const cv::Mat &lastImg, cv::Mat &darkPixel);
+	void DarkPixelGenerator(const cv::Mat &inputGrayImg, const cv::Mat &inputRGBImg,
+		const cv::Mat &lastGrayImg, const cv::Mat &lastRGBImg, cv::Mat &darkPixel);
 
 	/*=====POST-PROCESSING Methods=====*/
 	// Compensation with Motion Hist - checked

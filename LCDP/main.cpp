@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "RGB and LCDP V1.4 Test";
+const std::string programVersion = "RGB and LCDP V1.4";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -112,7 +112,7 @@ int main() {
 		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
 
 	}
-	for (size_t datasetIndex = 0; datasetIndex < 2; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex < 10; datasetIndex++) {
 		// Video file name
 		std::string filename;
 		switch (datasetIndex) {

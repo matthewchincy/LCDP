@@ -828,7 +828,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element);
 		cv::Mat invDarkPixel;
 		resDarkPixel.copyTo(invDarkPixel);
-		cv::dilate(invDarkPixel, invDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
+		cv::erode(invDarkPixel, invDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::dilate(invDarkPixel, invDarkPixel, cv::Mat(), cv::Point(-1, -1), 5);
 		cv::bitwise_not(invDarkPixel, invDarkPixel);
 		cv::bitwise_and(invDarkPixel, gradientResult, gradientResult);
 		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 2);
@@ -903,11 +904,15 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		//cv::medianBlur(tempCurrFGMask, tempCurrFGMask, postMedianFilterSize);
 		//cv::bitwise_and(resCurrFGMask, tempCurrFGMask, resCurrFGMask);
 
-		cv::medianBlur(resCurrFGMask, resLastFGMask, postMedianFilterSize);
+		//cv::medianBlur(resCurrFGMask, resLastFGMask, postMedianFilterSize);
+		cv::erode(resCurrFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::dilate(resCurrFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 4);
+		cv::erode(resCurrFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
+		cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
 		reconstructLine = BorderLineReconst(resLastFGMask);
-
+		cv::bitwise_or(reconstructLine, resLastFGMask, resLastFGMask);
 		resLastFGMask = ContourFill(resLastFGMask);
-		cv::erode(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 5);
+		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
 
 
 		//reconstructLine = BorderLineReconst(resLastFGMask);
@@ -1242,25 +1247,46 @@ void BackgroundSubtractorLCDP::RGBMatching(DescriptorStruct &bgWord, DescriptorS
 void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, const cv::Mat &inputRGBImg,
 	const cv::Mat &lastGrayImg, const cv::Mat &lastRGBImg, cv::Mat &darkPixel) {
 	darkPixel = cv::Scalar_<uchar>::all(255);
+	cv::Mat debugMat;
+	cv::Mat debugMatG;
+	cv::Mat debugMatGy;
+	debugMat.create(frameSize, CV_32FC1);
+	debugMat = cv::Scalar(0.0f);
+	debugMatG.create(frameSize, CV_32FC1);
+	debugMatG = cv::Scalar(0.0f);
+	debugMatGy.create(frameSize, CV_32FC1);
+	debugMatGy = cv::Scalar(0.0f);
 	// Store the pixel's intensity values
-	double currIntensityValue,lastIntensityValue,currRValue,lastRValue,currGValue,lastGValue,RDiff,GDiff;
+	double IntensityDiff,currIntensityValue,lastIntensityValue,currRValue,lastRValue,currGValue,lastGValue,RDiff,GDiff;
 
 	for (size_t pxPointer = 0; pxPointer < frameInitTotalPixel; ++pxPointer) {
-		currIntensityValue = inputGrayImg.data[pxPointer];
-		lastIntensityValue = lastGrayImg.data[pxPointer];
-
+		//currIntensityValue = inputGrayImg.data[pxPointer];
+		//lastIntensityValue = lastGrayImg.data[pxPointer];
+		currIntensityValue = (double(inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2])) / 3.0;
+		lastIntensityValue = (double(lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2])) / 3.0;
 		//if (!(((lastIntensityValue - currIntensityValue) > 0) && ((lastIntensityValue - currIntensityValue) < 110))) {
 		//	darkPixel.data[pxPointer] = 255;
 		//}
-		if (((currIntensityValue / lastIntensityValue) < 1) && ((currIntensityValue / lastIntensityValue) > 0.7)) {
-			lastRValue = lastRGBImg.data[(pxPointer * 3) + 2] / (lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
-			currRValue = inputRGBImg.data[(pxPointer * 3) + 2] / (inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
-			lastGValue = lastRGBImg.data[(pxPointer * 3) + 1] / (lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
-			currGValue = inputRGBImg.data[(pxPointer * 3) + 1] / (inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
-			RDiff = lastRValue - currGValue;
+
+		float * debugMatGys = (float*)(debugMatGy.data + (pxPointer * 4));
+		(*debugMatGys) = (currIntensityValue / lastIntensityValue);
+		IntensityDiff = (currIntensityValue / lastIntensityValue);
+		//129 221 = 53169
+		if ((IntensityDiff <= 1) && (IntensityDiff > 0.25)) {
+			lastRValue = double(lastRGBImg.data[(pxPointer * 3) + 2]) / double(lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
+			currRValue = double(inputRGBImg.data[(pxPointer * 3) + 2]) / double(inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
+			lastGValue = double(lastRGBImg.data[(pxPointer * 3) + 1]) / double(lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
+			currGValue = double(inputRGBImg.data[(pxPointer * 3) + 1]) / double(inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
+			RDiff = lastRValue - currRValue;
 			GDiff = lastGValue - currGValue;
-			if (((RDiff > 0.1) && (RDiff < 0.3)) && ((GDiff > 0.1) && (GDiff < 0.3))) {
-				darkPixel.data[pxPointer] = 0;
+			float * debugMats = (float*)(debugMat.data + (pxPointer * 4));
+			(*debugMats) = RDiff;
+			float * debugMatGs = (float*)(debugMatG.data + (pxPointer * 4));
+			(*debugMatGs) = GDiff;
+			//if (((RDiff > 0.1) && (RDiff < 0.4)) && ((GDiff > 0.1) && (GDiff < 0.4))) {
+			if ((std::abs(RDiff) < 0.09) && (std::abs(GDiff) < 0.09)) {
+				//darkPixel.data[pxPointer] = 0;
+				darkPixel.data[pxPointer] = 0;				
 			}
 		}
 	}

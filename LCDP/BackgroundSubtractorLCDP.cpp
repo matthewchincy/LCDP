@@ -1241,7 +1241,7 @@ void BackgroundSubtractorLCDP::RGBMatching(DescriptorStruct &bgWord, DescriptorS
 // Dark Pixel generator (RETURN-255: Not dark pixel, 0: dark pixel)
 void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, const cv::Mat &inputRGBImg,
 	const cv::Mat &lastGrayImg, const cv::Mat &lastRGBImg, cv::Mat &darkPixel) {
-	darkPixel = cv::Scalar_<uchar>::all(0);
+	darkPixel = cv::Scalar_<uchar>::all(255);
 	// Store the pixel's intensity values
 	double currIntensityValue,lastIntensityValue,currRValue,lastRValue,currGValue,lastGValue,RDiff,GDiff;
 
@@ -1252,15 +1252,15 @@ void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, c
 		//if (!(((lastIntensityValue - currIntensityValue) > 0) && ((lastIntensityValue - currIntensityValue) < 110))) {
 		//	darkPixel.data[pxPointer] = 255;
 		//}
-		if (!(((currIntensityValue / lastIntensityValue) < 1) && ((currIntensityValue / lastIntensityValue) > 0.35))) {
-			lastRValue = std::abs(lastRGBImg.data[(pxPointer * 3) + 2]/(lastRGBImg.data[(pxPointer * 3) + 0]+ lastRGBImg.data[(pxPointer * 3) + 1]+lastRGBImg.data[(pxPointer * 3) + 2])) ;
-			currRValue = std::abs(inputRGBImg.data[(pxPointer * 3) + 2] / (inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]));
-			lastGValue = std::abs(lastRGBImg.data[(pxPointer * 3) + 1] / (lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]));
-			currGValue = std::abs(inputRGBImg.data[(pxPointer * 3) + 1] / (inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]));
-			RDiff = std::abs(lastRValue - currGValue);
-			GDiff = std::abs(lastGValue - currGValue);
-			if (!((RDiff < 0.3) && (GDiff < 0.))) {
-				darkPixel.data[pxPointer] = 255;
+		if (((currIntensityValue / lastIntensityValue) < 1) && ((currIntensityValue / lastIntensityValue) > 0.7)) {
+			lastRValue = lastRGBImg.data[(pxPointer * 3) + 2] / (lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
+			currRValue = inputRGBImg.data[(pxPointer * 3) + 2] / (inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
+			lastGValue = lastRGBImg.data[(pxPointer * 3) + 1] / (lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
+			currGValue = inputRGBImg.data[(pxPointer * 3) + 1] / (inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
+			RDiff = lastRValue - currGValue;
+			GDiff = lastGValue - currGValue;
+			if (((RDiff > 0.1) && (RDiff < 0.3)) && ((GDiff > 0.1) && (GDiff < 0.3))) {
+				darkPixel.data[pxPointer] = 0;
 			}
 		}
 	}

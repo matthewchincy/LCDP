@@ -112,7 +112,7 @@ int main() {
 		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
 
 	}
-	for (size_t datasetIndex = 1; datasetIndex < 2; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex < 2; datasetIndex++) {
 		// Video file name
 		std::string filename;
 		switch (datasetIndex) {

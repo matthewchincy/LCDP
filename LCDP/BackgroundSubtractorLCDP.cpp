@@ -258,10 +258,10 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	resLastRawFGMask = cv::Scalar_<uchar>::all(0);
 	// t-1 foreground mask
 	resT_1FGMask.create(frameSize, CV_8UC1);
-	resT_1FGMask = cv::Scalar_<uchar>::all(255);
+	resT_1FGMask = cv::Scalar_<uchar>::all(0);
 	// t-2 foreground mask
 	resT_2FGMask.create(frameSize, CV_8UC1);
-	resT_2FGMask = cv::Scalar_<uchar>::all(255);
+	resT_2FGMask = cv::Scalar_<uchar>::all(0);
 	// Flooded holes foreground mask
 	//resFGMaskFloodedHoles.create(frameSize, CV_8UC1);
 	resFGMaskFloodedHoles.create(frameSize, CV_8UC1);
@@ -798,30 +798,11 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::Mat compensationResult;
 		resCurrFGMask.copyTo(resLastRawFGMask);
 		cv::Mat element = cv::getStructuringElement(0, cv::Size(5, 5));
-		//cv::Mat element2 = cv::getStructuringElement(cv::MORPH_RECT,
-		//	cv::Size(2 * 3 + 1, 2 * 3 + 1));
-		//cv::Mat element3 = cv::getStructuringElement(cv::MORPH_RECT,
-		//	cv::Size(2 * 5 + 1, 2 * 5 + 1));
-		//cv::Mat element4 = cv::getStructuringElement(cv::MORPH_RECT,
-		//	cv::Size(1, 2 * 4 + 1));
-		// 1st round
 		cv::Mat tempCurrFGMask;
 		resCurrFGMask.copyTo(tempCurrFGMask);
 
-		//cv::Mat fillHolesFilter = DarkPixelGenerator(inputImg);
 		compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
-		//cv::erode(resCurrFGMask, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 1);
-		//cv::dilate(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 1);
-		//cv::dilate(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::erode(resCurrFGMask, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
 
-		//cv::morphologyEx(resCurrFGMask, resFGMaskPreFlood, cv::MORPH_OPEN, element);
-		//cv::erode(resCurrFGMask, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::dilate(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
-		//resCurrFGMask.copyTo(resFGMaskFloodedHoles);
-		//resCurrFGMask.copyTo(resFGMaskPreFlood);
-		//cv::medianBlur(resFGMaskFloodedHoles, resFGMaskFloodedHoles, postMedianFilterSize);
-		// 2nd round
 		cv::Mat gradientResult;
 		inputGrayImg.copyTo(gradientResult);
 		cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
@@ -850,22 +831,6 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 5);
 		//cv::bitwise_not(resDarkPixel, resDarkPixel);
 
-
-		//cv::morphologyEx(resDarkPixel, resDarkPixel, cv::MORPH_DILATE, element);
-
-		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::bitwise_and(resFGMaskFloodedHoles, resDarkPixel, resFGMaskFloodedHoles);
-		//cv::dilate(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::bitwise_not(gradientResult, gradientResult);
-		//cv::bitwise_and(gradientResult, resFGMaskFloodedHoles, resFGMaskFloodedHoles);
-		//cv::bitwise_and(gradientResult, gradientResult, resCurrFGMask);
-		//cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
-		//cv::medianBlur(resFGMaskFloodedHoles, resFGMaskFloodedHoles, postMedianFilterSize);
-		//reconstructLine = BorderLineReconst(resFGMaskFloodedHoles);
-		//cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
-		//cv::dilate(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::Mat(), cv::Point(-1, -1), 5);
-		//cv::morphologyEx(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::MORPH_CLOSE, element);
 		//cv::dilate(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::Mat(), cv::Point(-1, -1), 3);
 		cv::bitwise_or(tempCurrFGMask, reconstructLine, resFGMaskPreFlood);
 		cv::bitwise_or(resDarkPixel, resFGMaskPreFlood, resFGMaskPreFlood);
@@ -884,34 +849,21 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 
 		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element2);
 		//cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
-		//resDarkPixel = DarkPixelGenerator(inputImg);
-		//cv::morphologyEx(resDarkPixel, resDarkPixel, cv::MORPH_DILATE, element);	
-		//cv::bitwise_and(resDarkPixel, gradientResult, gradientResult);
-		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_DILATE, element3);
-		//cv::bitwise_not(gradientResult, gradientResult);
-		//cv::bitwise_and(tempCurrFGMask, gradientResult, tempCurrFGMask);
-		//cv::morphologyEx(tempCurrFGMask, tempCurrFGMask, cv::MORPH_CLOSE, element2);
-		//reconstructLine = BorderLineReconst(tempCurrFGMask);
-		////compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
-		//cv::morphologyEx(tempCurrFGMask, resFGMaskPreFlood, cv::MORPH_CLOSE, element);
-		//resFGMaskPreFlood.copyTo(resFGMaskFloodedHoles);
-		//cv::bitwise_or(resFGMaskFloodedHoles, reconstructLine, resFGMaskFloodedHoles);
-		//resFGMaskFloodedHoles = ContourFill(resFGMaskFloodedHoles);
-		//cv::erode(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::bitwise_or(tempCurrFGMask, resFGMaskFloodedHoles, tempCurrFGMask);
-		//cv::bitwise_or(tempCurrFGMask, resFGMaskPreFlood, tempCurrFGMask);
-		//cv::morphologyEx(tempCurrFGMask, tempCurrFGMask, cv::MORPH_CLOSE, element2);
-		//cv::medianBlur(tempCurrFGMask, tempCurrFGMask, postMedianFilterSize);
-		//cv::bitwise_and(resCurrFGMask, tempCurrFGMask, resCurrFGMask);
 
 		//cv::medianBlur(resCurrFGMask, resLastFGMask, postMedianFilterSize);
 		cv::erode(resCurrFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 3);
-		cv::dilate(resCurrFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 4);
-		cv::erode(resCurrFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
-		cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
+		cv::bitwise_or(resLastFGMask, compensationResult, resLastFGMask);
+		cv::dilate(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
+		cv::erode(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
+		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
 		reconstructLine = BorderLineReconst(resLastFGMask);
 		cv::bitwise_or(reconstructLine, resLastFGMask, resLastFGMask);
 		resLastFGMask = ContourFill(resLastFGMask);
+
+		cv::dilate(resLastFGMask, resLastFGMask,cv::MORPH_ELLIPSE, cv::Point(-1, -1), 2);
+		cv::erode(resLastFGMask, resLastFGMask, cv::MORPH_ELLIPSE, cv::Point(-1, -1), 2);
+		cv::dilate(resLastFGMask, resLastFGMask, cv::MORPH_ELLIPSE, cv::Point(-1, -1), 1);
+
 		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
 
 
@@ -1299,17 +1251,19 @@ cv::Mat BackgroundSubtractorLCDP::CompensationMotionHist(const cv::Mat T_1FGMask
 	cv::Mat compensationResult;
 	compensationResult.create(frameSize, CV_8UC1);
 	compensationResult = cv::Scalar_<uchar>::all(0);
-
+	float compensationThreshold;
 	for (size_t modelIndex = 0; modelIndex < frameInitTotalPixel; modelIndex++) {
 		if (!currFGMask.data[modelIndex]) {
-			int totalFGMask = 0;
+			double totalFGMask = 0.0;
 			for (size_t nbIndex = 0; nbIndex < 9; nbIndex++) {
 				totalFGMask += T_1FGMask.data[pxInfoLUTPtr[modelIndex].nbIndex[nbIndex].dataIndex];
 				totalFGMask += T_2FGMask.data[pxInfoLUTPtr[modelIndex].nbIndex[nbIndex].dataIndex];
 				totalFGMask += currFGMask.data[pxInfoLUTPtr[modelIndex].nbIndex[nbIndex].dataIndex];
 			}
-			totalFGMask /= 255;
-			compensationResult.data[modelIndex] = ((totalFGMask / 26) > postCompensationThreshold.data[modelIndex]) ? 255 : 0;
+			totalFGMask /= 255.0;
+
+			compensationThreshold = *((float*)(postCompensationThreshold.data + (modelIndex * 4)));
+			compensationResult.data[modelIndex] = ((totalFGMask / 26.0) > compensationThreshold) ? 255 : 0;
 		}
 	}
 

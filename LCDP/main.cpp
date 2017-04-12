@@ -33,7 +33,7 @@ void GenerateProcessTime(double FRAME_COUNT, std::string currFolderName);
 
 /****Global variable declaration****/
 // Program version
-const std::string programVersion = "RGB and LCDP V1.4";
+const std::string programVersion = "RGB and LCDP V1.5";
 // Show input frame switch
 bool showInputSwitch;
 // Show output frame switch
@@ -120,11 +120,11 @@ int main() {
 			break;
 		case 1: filename = "canoe";
 			break;
-		case 2:filename = "cubicle";
+		case 2:filename = "sofa";
 			break;
 		case 3: filename = "traffic";
 			break;
-		case 4:filename = "sofa";
+		case 4:filename = "cubicle";
 			break;
 		case 5: filename = "boats";
 			break;

@@ -802,74 +802,65 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		resCurrFGMask.copyTo(tempCurrFGMask);
 
 		compensationResult = CompensationMotionHist(resT_1FGMask, resT_2FGMask, resCurrFGMask, postCompensationThreshold);
-
-		cv::Mat gradientResult;
+		cv::Mat grad_x, grad_y, grad;
+		cv::Mat abs_grad_x, abs_grad_y;
+		cv::Mat sobelResult;
+		int ddepth = CV_16S;
+		int scale = 1;
+		int delta = 0;
+		cv::Sobel(inputGrayImg, sobelResult, CV_32F, 1, 0);
+		/// Gradient X
+		cv::Sobel(inputGrayImg, grad_x, ddepth, 1, 0, 3, scale, delta, cv::BORDER_DEFAULT);
+		/// Gradient Y
+		cv::Sobel(inputGrayImg, grad_y, ddepth, 0, 1, 3, scale, delta, cv::BORDER_DEFAULT);
+		convertScaleAbs(grad_x, abs_grad_x);
+		convertScaleAbs(grad_y, abs_grad_y);
+		addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+		
+		cv::Mat gradientResult,gradientResult2;
+		cv::inRange(grad, cv::Scalar(75), cv::Scalar(110), gradientResult2);
+		cv::dilate(gradientResult2, gradientResult2, cv::Mat(), cv::Point(-1, -1), 4);
 		inputGrayImg.copyTo(gradientResult);
 		cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
 		cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element);
 		cv::Mat invDarkPixel;
 		resDarkPixel.copyTo(invDarkPixel);
-		cv::erode(invDarkPixel, invDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
-		cv::dilate(invDarkPixel, invDarkPixel, cv::Mat(), cv::Point(-1, -1), 5);
 		cv::bitwise_not(invDarkPixel, invDarkPixel);
+		cv::erode(invDarkPixel, invDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::dilate(invDarkPixel, invDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
+		
 		cv::bitwise_and(invDarkPixel, gradientResult, gradientResult);
-		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 2);
+		//cv::bitwise_and(invDarkPixel, gradientResult2, gradientResult2);
+		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 5);
+		//cv::dilate(gradientResult2, gradientResult2, cv::Mat(), cv::Point(-1, -1), 5);
 		cv::bitwise_not(gradientResult, gradientResult);
-		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::erode(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
+		cv::bitwise_not(gradientResult2, gradientResult2);
 		cv::bitwise_and(resCurrFGMask, gradientResult, tempCurrFGMask);
+		cv::bitwise_and(resCurrFGMask, gradientResult2, tempCurrFGMask);
 		cv::erode(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
 		cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
 		cv::medianBlur(resDarkPixel, resDarkPixel, 3);
-		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 1);
 		cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult);
-
-		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
-		cv::Mat reconstructLine = BorderLineReconst(gradientResult);
-		//cv::bitwise_not(resDarkPixel, resDarkPixel);
-		//cv::Canny(resDarkPixel, resDarkPixel, 0, 255, 3);
-		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 5);
-		//cv::bitwise_not(resDarkPixel, resDarkPixel);
-
-		//cv::dilate(resFGMaskFloodedHoles, resFGMaskFloodedHoles, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult2);
+		cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_CLOSE, element);
+		cv::morphologyEx(gradientResult2, gradientResult2, cv::MORPH_CLOSE, element);
+		//cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::Mat reconstructLine = BorderLineReconst(gradientResult2);
 		cv::bitwise_or(tempCurrFGMask, reconstructLine, resFGMaskPreFlood);
-		cv::bitwise_or(resDarkPixel, resFGMaskPreFlood, resFGMaskPreFlood);
-		//resCurrFGMask.copyTo(resFGMaskPreFlood);
+		//cv::bitwise_or(resDarkPixel, resFGMaskPreFlood, resFGMaskPreFlood);
 		cv::dilate(resFGMaskPreFlood, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
 		cv::morphologyEx(resFGMaskPreFlood, resFGMaskPreFlood, cv::MORPH_CLOSE, element);
 		resFGMaskFloodedHoles = ContourFill(resFGMaskPreFlood);
-
-		//cv::floodFill(resFGMaskFloodedHoles, cv::Point(0, 0), UCHAR_MAX);
-		//cv::bitwise_and(resFGMaskFloodedHoles, fillHolesFilter, resFGMaskFloodedHoles);
-		//cv::dilate(resFGMaskFloodedHoles, resFGMaskPreFlood, cv::Mat(), cv::Point(-1, -1), 3);
-
-		//cv::bitwise_and(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
+		//cv::dilate(reconstructLine, reconstructLine, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::bitwise_not(reconstructLine, reconstructLine);
+		//cv::bitwise_and(reconstructLine, resFGMaskFloodedHoles, resFGMaskFloodedHoles);
 		cv::bitwise_or(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
-		cv::bitwise_or(resCurrFGMask, compensationResult, resCurrFGMask);
+		cv::bitwise_or(resCurrFGMask, compensationResult, resLastFGMask);
+		////cv::dilate(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
 
-		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_GRADIENT, element2);
-		//cv::threshold(gradientResult, gradientResult, 80, 255, CV_THRESH_BINARY);
-
-		//cv::medianBlur(resCurrFGMask, resLastFGMask, postMedianFilterSize);
-		cv::erode(resCurrFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 3);
-		cv::bitwise_or(resLastFGMask, compensationResult, resLastFGMask);
-		cv::dilate(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
-		cv::erode(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
-		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
-		reconstructLine = BorderLineReconst(resLastFGMask);
-		cv::bitwise_or(reconstructLine, resLastFGMask, resLastFGMask);
-		resLastFGMask = ContourFill(resLastFGMask);
-
-		cv::dilate(resLastFGMask, resLastFGMask,cv::MORPH_ELLIPSE, cv::Point(-1, -1), 2);
-		cv::erode(resLastFGMask, resLastFGMask, cv::MORPH_ELLIPSE, cv::Point(-1, -1), 2);
-		cv::dilate(resLastFGMask, resLastFGMask, cv::MORPH_ELLIPSE, cv::Point(-1, -1), 1);
-
-		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
-
-
-		//reconstructLine = BorderLineReconst(resLastFGMask);
-		//cv::bitwise_or(reconstructLine, resLastFGMask, resLastFGMask);
-		//resLastFGMask = ContourFill(resLastFGMask);
+		//cv::erode(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::dilate(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
+		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);		 
 		resLastFGMask.copyTo(resCurrFGMask);
 		resT_1FGMask.copyTo(resT_2FGMask);
 		resLastFGMask.copyTo(resT_1FGMask);
@@ -1222,24 +1213,35 @@ void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, c
 
 		float * debugMatGys = (float*)(debugMatGy.data + (pxPointer * 4));
 		(*debugMatGys) = (currIntensityValue / lastIntensityValue);
+
+
 		IntensityDiff = (currIntensityValue / lastIntensityValue);
-		//129 221 = 53169
-		if ((IntensityDiff <= 1) && (IntensityDiff > 0.25)) {
+
+		//if ((IntensityDiff <= 0.6) && (IntensityDiff > 0.3)) {
+		//if ((IntensityDiff <= 0.412281) && (IntensityDiff >= 0.25)) {
+			if ((IntensityDiff <0.8) && (IntensityDiff > 0.25)) {
 			lastRValue = double(lastRGBImg.data[(pxPointer * 3) + 2]) / double(lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
 			currRValue = double(inputRGBImg.data[(pxPointer * 3) + 2]) / double(inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
 			lastGValue = double(lastRGBImg.data[(pxPointer * 3) + 1]) / double(lastRGBImg.data[(pxPointer * 3) + 0] + lastRGBImg.data[(pxPointer * 3) + 1] + lastRGBImg.data[(pxPointer * 3) + 2]);
 			currGValue = double(inputRGBImg.data[(pxPointer * 3) + 1]) / double(inputRGBImg.data[(pxPointer * 3) + 0] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
-			RDiff = lastRValue - currRValue;
-			GDiff = lastGValue - currGValue;
+			RDiff = std::abs(lastRValue - currRValue);
+			GDiff = std::abs(lastGValue - currGValue);
+
 			float * debugMats = (float*)(debugMat.data + (pxPointer * 4));
 			(*debugMats) = RDiff;
 			float * debugMatGs = (float*)(debugMatG.data + (pxPointer * 4));
 			(*debugMatGs) = GDiff;
-			//if (((RDiff > 0.1) && (RDiff < 0.4)) && ((GDiff > 0.1) && (GDiff < 0.4))) {
-			if ((std::abs(RDiff) < 0.09) && (std::abs(GDiff) < 0.09)) {
-				//darkPixel.data[pxPointer] = 0;
-				darkPixel.data[pxPointer] = 0;				
+
+			
+			if ( (RDiff < 0.15) &&(GDiff < 0.1)) {
+				darkPixel.data[pxPointer] = 0;
 			}
+			//if (((RDiff > 0) && (RDiff < 0.06)) && ((GDiff > 0) && (GDiff < 0.03))) {
+			//((std::abs(RDiff) < 0.08) && (std::abs(GDiff) < 0.02)) {
+
+			//if ((std::abs(RDiff) < 0.09) && (std::abs(GDiff) < 0.09)) {
+			//	darkPixel.data[pxPointer] = 0;				
+			//}
 		}
 	}
 }

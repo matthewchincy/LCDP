@@ -66,10 +66,10 @@ int main() {
 	double LCDPThresh[1] = { 0.2};
 	// Words No
 	//double WordsNoList[3] = { 20,25,30 };
-	double WordsNoList[1] = { 30 };
+	double WordsNoList[1] = { 25 };
 	// Matching threshold
 	//double MatchingThresholdList[4] = { 2,3,4,5 };
-	double MatchingThresholdList[1] = { 3 };
+	double MatchingThresholdList[1] = { 5 };
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
 	float DynamicRateIncrease[1] = { 0.8f };
@@ -90,29 +90,29 @@ int main() {
 	evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
 	// evaluateResultSwitch = true;
 
-	// Ratio calculation method - false:Old, true:new
-	bool inputDescRatioCalculationMethod = readBoolInput("Ratio calculation method - 0:Old, 1:new");
-	// Classify method - false:Old, true:new
-	bool inputMatchingMethod = readBoolInput("Classify method - 0:Old, 1:new");
-	// Debug switch
-	debugSwitch = readBoolInput("Debug Mode(1/0)");
-	//debugSwitch = false;
-	// Debug starting frame index
-	int debugFrameIndex = 0;
-	// Debug x-point
-	int debugX = 0;
-	// Debug y-point
-	int debugY = 0;
-	if (debugSwitch) {
-		// Read x-point for debug
-		debugX = readIntInput("X-Point");
-		// Read y-point for debug
-		debugY = readIntInput("Y-Point");
-		// Read starting frame index for debug
-		debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
+	//// Ratio calculation method - false:Old, true:new
+	//bool inputDescRatioCalculationMethod = readBoolInput("Ratio calculation method - 0:Old, 1:new");
+	//// Classify method - false:Old, true:new
+	//bool inputMatchingMethod = readBoolInput("Classify method - 0:Old, 1:new");
+	//// Debug switch
+	//debugSwitch = readBoolInput("Debug Mode(1/0)");
+	////debugSwitch = false;
+	//// Debug starting frame index
+	//int debugFrameIndex = 0;
+	//// Debug x-point
+	//int debugX = 0;
+	//// Debug y-point
+	//int debugY = 0;
+	//if (debugSwitch) {
+	//	// Read x-point for debug
+	//	debugX = readIntInput("X-Point");
+	//	// Read y-point for debug
+	//	debugY = readIntInput("Y-Point");
+	//	// Read starting frame index for debug
+	//	debugFrameIndex = readIntInput("Starting Frame Index for debug (Start:0)");
 
-	}
-	for (size_t datasetIndex = 0; datasetIndex < 10; datasetIndex++) {
+	//}
+	for (size_t datasetIndex = 0; datasetIndex < 2; datasetIndex++) {
 		// Video file name
 		std::string filename;
 		switch (datasetIndex) {
@@ -135,6 +135,8 @@ int main() {
 		case 8: filename = "fountain01";
 			break;
 		case 9:filename = "fall";
+			break;
+		case 10:filename = "PETS2006";
 			break;
 		default:
 			std::cout << "Error occurs!";
@@ -215,7 +217,7 @@ int main() {
 								// RGB detection switch
 								bool RGBDiffSwitch = true;
 								// RGB differences threshold
-								double RGBThreshold = 20;
+								double RGBThreshold = 18;
 								// LCDP detection switch
 								bool LCDPDiffSwitch = true;
 								// LCDP differences threshold
@@ -257,17 +259,17 @@ int main() {
 								std::string startTime = currentDateTimeStamp(&tempStartTime);
 								std::string folderName;
 								// Current process result folder name
-								if (inputDescRatioCalculationMethod) {
-									folderName = filename + "/" + programVersion + "/New-" + programVersion + "-" + startTime;
-								}
-								else {
-									folderName = filename + "/" + programVersion + "/Old-" + programVersion + "-" + startTime;
-								}
+								//if (inputDescRatioCalculationMethod) {
+									folderName = filename + "/" + programVersion + "/" + programVersion + "-" + startTime;
+								//}
+								//else {
+								//	folderName = filename + "/" + programVersion + "/Old-" + programVersion + "-" + startTime;
+								//}
 
 								// Declare background subtractor construtor
 								BackgroundSubtractorLCDP backgroundSubtractorLCDP(folderName, Words_No, PreSwitch,
-									inputDescColourDiffRatio, inputDescRatioCalculationMethod, RGBDiffSwitch,
-									RGBThreshold, LCDPDiffSwitch, LCDPThreshold, upLCDPThreshold, LCDPMaxThreshold, inputMatchingMethod, matchingThreshold,
+									inputDescColourDiffRatio, 1, RGBDiffSwitch,
+									RGBThreshold, LCDPDiffSwitch, LCDPThreshold, upLCDPThreshold, LCDPMaxThreshold, 1, matchingThreshold,
 									NbMatchSwitch, ROI_FRAME, FRAME_SIZE, RandomReplaceSwitch, RandomUpdateNbSwitch, FeedbackSwitch,
 									inputDynamicRateIncrease, inputDynamicRateDecrease, inputUpdateRateIncrease, inputUpdateRateDecrease,
 									inputUpdateRateLowest, inputUpdateRateHighest, PostSwitch);
@@ -409,7 +411,7 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 					TP++;
 				}
 				// FN
-				else {
+				else if (resValue == 0) {
 					FN++;
 				}
 			}
@@ -420,7 +422,7 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 					TN++;
 				}
 				// SE FP
-				else {
+				else if (resValue == 255) {
 					SE++;
 					FP++;
 				}
@@ -430,8 +432,8 @@ void EvaluateResult(std::string filename, std::string folderName, std::string cu
 				if (resValue == 0) {
 					TN++;
 				}
-				// SE FP
-				else {
+				// FP
+				else if (resValue == 255) {
 					FP++;
 				}
 			}

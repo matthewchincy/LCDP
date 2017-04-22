@@ -58,8 +58,8 @@ static inline void getRandSamplePosition_7x7(cv::Point & sampleCoor, const cv::P
 		}
 	}
 stop:
-	sampleCoor.x += currCoor.x - s_nSamplesInitPatternWidth_7x7 / 2;
-	sampleCoor.y += currCoor.y - s_nSamplesInitPatternHeight_7x7 / 2;
+	sampleCoor.x = sampleCoor.x + currCoor.x - (s_nSamplesInitPatternWidth_7x7 / 2);
+	sampleCoor.y = sampleCoor.y + currCoor.y - (s_nSamplesInitPatternHeight_7x7 / 2);
 	if (sampleCoor.x < border)
 		sampleCoor.x = border;
 	else if (sampleCoor.x >= imgsize.width - border)

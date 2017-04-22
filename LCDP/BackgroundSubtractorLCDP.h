@@ -8,14 +8,12 @@
 class BackgroundSubtractorLCDP {
 public:
 	/*******CONSTRUCTOR*******/ // Checked
-	BackgroundSubtractorLCDP(std::string folderName, size_t inputWordsNo, bool inputPreSwitch,
-		double inputDescColourDiffRatioInit, bool inputDescRatioCalculationMethod, bool inputRGBDiffSwitch,
-		double inputRGBThreshold,bool inputLCDPDiffSwitch, double inputLCDPThreshold, double inputUpLCDPThreshold,
-		double inputLCDPMaxThreshold, bool inputMatchingMethod, int inputMatchThreshold, bool inputNbMatchSwitch,
-		cv::Mat inputROI, cv::Size inputFrameSize,
-		bool inputRandomReplaceSwitch, bool inputRandomUpdateNbSwitch, bool inputFeedbackSwitch,
-		float inputDynamicRateIncrease, float inputDynamicRateDecrease, float inputUpdateRateIncrease, float inputUpdateRateDecrease,
-		float inputUpdateRateLowest, float inputUpdateRateHighest, bool inputPostSwitch);
+	BackgroundSubtractorLCDP(size_t inputWordsNo, bool inputPreSwitch,
+		double inputDescColourDiffRatio, bool inputClsRGBDiffSwitch, double inputClsRGBThreshold, double inputClsUpRGBThreshold, bool inputClsLCDPDiffSwitch,
+		double inputClsLCDPThreshold, double inputClsUpLCDPThreshold, double inputClsLCDPMaxThreshold, int inputClsMatchThreshold,
+		bool inputClsNbMatchSwitch, cv::Mat inputROI, cv::Size inputFrameSize, bool inputUpRandomReplaceSwitch, bool inputUpRandomUpdateNbSwitch,
+		bool inputUpFeedbackSwitch, float inputUpDynamicRateIncrease, float inputUpDynamicRateDecrease, float inputUpUpdateRateIncrease,
+		float inputUpUpdateRateDecrease, float inputUpUpdateRateLowest, float inputUpUpdateRateHighest, bool inputPostSwitch);
 
 	/*******DESTRUCTOR*******/ // Checked
 	~BackgroundSubtractorLCDP();
@@ -28,15 +26,11 @@ public:
 
 	/*=====OTHERS Methods=====*/
 	// Save parameters
-	void SaveParameter(std::string filename, std::string folderName);
-
-	/*=====DEBUG=====*/
-	bool debugSwitch = false;
-	void DebugPxLocation(int x, int y);
+	void SaveParameter(std::string versionFolderName, std::string saveFolderName);
 protected:
-	const std::string folderName;
+
 	// PRE-DEFINED STRUCTURE
-	// Descriptor structure - Checked
+	// Descriptor structure
 	struct DescriptorStruct {
 		// Store the pixel's RGB values
 		int rgb[3];
@@ -50,7 +44,7 @@ protected:
 		int LCDP[16];
 	};
 
-	// Pixel info structure - Checked
+	// Pixel info structure
 	struct PxInfoStruct {
 		// Coordinate Y value for current pixel
 		int coor_y;
@@ -64,7 +58,7 @@ protected:
 		size_t modelIndex;
 	};
 
-	// Pixel info structure - Checked
+	// Pixel info structure
 	struct PxInfo :PxInfoStruct {
 		// 16 neighbour pixels' info
 		PxInfoStruct nbIndex[48];
@@ -111,29 +105,29 @@ protected:
 	// Pre process switch
 	const bool preSwitch;
 	// Size of gaussian filter
-	cv::Size preGaussianSize;	
+	cv::Size preGaussianSize;
 
 	/*=====DESCRIPTOR Parameters=====*/
 	// Size of neighbourhood 3(3x3)/5(5x5)
-	cv::Mat descNbSize;
+	const int descNbSize;
 	// Total number of neighbourhood pixel 8(3x3)/16(5x5)
-	cv::Mat descNbNo;
+	const int descNbNo;
 	// LCD colour differences ratio
 	const double descColourDiffRatio;
-	// LCD colour differences ratio
-	cv::Mat descColorDiffRatio;
 	// Total number of differences per descriptor
 	const size_t descDiffNo;
 	// Persistence's offset value;
 	const size_t descOffsetValue;
-	// Ratio calculation method
-	const bool descRatioCalculationMethod;
+	// Total length of descriptor pattern
+	const int descPatternLength;
 
 	/*=====CLASSIFIER Parameters=====*/
 	// RGB detection switch
 	const bool clsRGBDiffSwitch;
 	// RGB differences threshold
-	const double clsRGBThreshold;
+	double clsRGBThreshold;
+	// Up RGB differences threshold
+	double clsUpRGBThreshold;
 	// LCDP detection switch
 	const bool clsLCDPDiffSwitch;
 	// LCDP differences threshold
@@ -144,14 +138,10 @@ protected:
 	const double clsLCDPMaxThreshold;
 	// Neighbourhood matching switch
 	const bool clsNbMatchSwitch;
-	// Total number of neighbour 0(0)/8(3x3)/16(5x5)
-	cv::Mat clsNbNo;
 	// Matched persistence threshold value
 	cv::Mat clsPersistenceThreshold;
 	// Minimum persistence threhsold value
 	float clsMinPersistenceThreshold;
-	// Classify method
-	const bool clsMatchingMethod;
 	// Matching threshold
 	const int clsMatchThreshold;
 
@@ -159,9 +149,11 @@ protected:
 	// Size of median filter
 	size_t postMedianFilterSize;
 	// The compensation motion history threshold
-	cv::Mat postCompensationThreshold;
+	const float postCompensationThreshold;
 	// Post processing switch
 	const bool postSwitch;
+	// Compensation Results
+	cv::Mat postCompensationResult;
 
 	/*=====FRAME Parameters=====*/
 	// ROI frame
@@ -185,8 +177,6 @@ protected:
 	const bool upRandomReplaceSwitch;
 	// Random update neighbourhood model switch
 	const bool upRandomUpdateNbSwitch;
-	// Total number of neighbour undergo neighbourhood updates 8(3X3)/16(5X5)
-	cv::Mat upNbNo;
 	// Feedback loop switch
 	const bool upFeedbackSwitch;
 	// Feedback V(x) Increment
@@ -231,10 +221,10 @@ protected:
 	cv::Mat resCurrUpLCDPFGMask;
 	// Current RGB foreground mask
 	cv::Mat resCurrRGBFGMask;
+	// Current Up RGB foreground mask
+	cv::Mat resCurrUpRGBFGMask;
 	// Previous foreground mask
 	cv::Mat resLastFGMask;
-	// The foreground mask generated by the method at [t-1] (without post-proc, used for blinking px detection)
-	cv::Mat resLastRawFGMask;
 	// t-1 foreground mask
 	cv::Mat resT_1FGMask;
 	// t-2 foreground mask
@@ -253,7 +243,7 @@ protected:
 	/*=====METHODS=====*/
 	/*=====DEFAULT methods=====*/
 	// Refreshes all samples based on the last analyzed frame - checked
-	void RefreshModel(const float refreshFraction, const bool forceUpdateSwitch = false);
+	void RefreshModel(const float refreshFraction);
 
 	/*=====DESCRIPTOR Methods=====*/
 	// DescriptorStruct Generator-Generate pixels' descriptor (RGB+LCDP) - checked
@@ -273,8 +263,8 @@ protected:
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN: LCDPResult-1:Not match, 0: Match)
 	void DescriptorMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord
-		, const size_t &descNeighNo, const double LCDPThreshold, const double upLCDPThreshold, const double RGBThreshold,
-		float &LCDPDistance, float &upLCDPDistance, float &RGBDistance, bool &LCDPResult, bool &upLCDPResult, bool &RGBResult);
+		, const size_t &descNeighNo, const double LCDPThreshold, const double upLCDPThreshold, const double RGBThreshold, const double upRGBThreshold,
+		float &LCDPDistance, float &RGBDistance, bool &LCDPResult, bool &upLCDPResult, bool &RGBResult, bool &upRGBResult);
 	// LCD Matching (RETURN-1:Not match, 0: Match)
 	void LCDPMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord,
 		const size_t &descNeighNo, const double &LCDPThreshold, float &minDistance, bool &result);
@@ -287,7 +277,7 @@ protected:
 
 	/*=====POST-PROCESSING Methods=====*/
 	// Compensation with Motion Hist - checked
-	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const cv::Mat postCompensationThreshold);
+	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const float postCompensationThreshold);
 	// Contour filling the empty holes - checked
 	cv::Mat ContourFill(const cv::Mat inputImg);
 	cv::Mat BorderLineReconst(const cv::Mat inputMask);

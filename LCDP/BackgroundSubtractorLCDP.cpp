@@ -227,6 +227,10 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	// Current RGB foreground mask
 	resCurrRGBFGMask.create(frameSize, CV_8UC1);
 	resCurrRGBFGMask = cv::Scalar_<uchar>::all(0);
+	// Current Up RGB foreground mask
+	resCurrUpRGBFGMask.create(frameSize, CV_8UC1);
+	resCurrUpRGBFGMask = cv::Scalar_<uchar>::all(0);
+
 	// Dark Pixel
 	resDarkPixel.create(frameSize, CV_8UC1);
 	resDarkPixel = cv::Scalar_<uchar>::all(0);
@@ -596,7 +600,6 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					// Use different LCDP threshold
 					if (currUpLCDPFGMask) {
 						(*currFGMask) = 255;
-						std::cout << "LCDP:FG,RGB:BG-FG";
 					}
 					else {
 						//(*currDarkPixel) = 0;
@@ -871,6 +874,12 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	// Reset minimum matching distance
 	resMinLCDPDistance = cv::Scalar(1.0f);
 	resMinRGBDistance = cv::Scalar(1.0f);
+	resCurrFGMask = cv::Scalar_<uchar>::all(0);
+	resCurrUpLCDPFGMask = cv::Scalar_<uchar>::all(0);
+	resCurrUpRGBFGMask = cv::Scalar_<uchar>::all(0);
+	resCurrLCDPFGMask = cv::Scalar_<uchar>::all(0);
+	resCurrRGBFGMask = cv::Scalar_<uchar>::all(0);
+
 	// Update average image
 	resLastImg = (inputImg + (resLastImg*(frameIndex - 1))) / frameIndex;
 	resLastGrayImg = (inputGrayImg + (resLastGrayImg*(frameIndex - 1))) / frameIndex;

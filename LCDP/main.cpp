@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL No Post";
+	programVersion = "RL V1.5 ALL";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -62,7 +62,7 @@ int main() {
 
 	// Total number of words per pixel
 	//double WordsNoList[3] = { 20,25,30 };
-	size_t Words_No = 30;
+	size_t Words_No = 25;
 	/*=====CLASSIFIER Parameters=====*/
 	//double ratio[2] = { 0.15,0.2 };
 	double descColourDiffRatio = 0.15;
@@ -71,7 +71,7 @@ int main() {
 	// RGB differences threshold
 	double clsRGBThreshold = 18;
 	// Up RGB differences threshold
-	double clsUpRGBThreshold = 40;
+	double clsUpRGBThreshold = 30;
 	// LCDP detection switch
 	bool clsLCDPDiffSwitch = true;
 	// LCDP differences threshold (0-1)
@@ -99,10 +99,10 @@ int main() {
 
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
-	float upDynamicRateIncrease = 1.0f;
+	float upDynamicRateIncrease = 0.2f;
 	// Feedback V(x) Decrement
 	//float DynamicRateDecrease[3] = { 0.4f,0.3f,0.1f };
-	float upDynamicRateDecrease = 0.1f;
+	float upDynamicRateDecrease = 0.5f;
 	// Feedback T(x) Increment
 	float upUpdateRateIncrease = 0.5f;
 	// Feedback T(x) Decrement
@@ -123,7 +123,7 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 0; datasetIndex < 11; datasetIndex++) {
+	for (size_t datasetIndex = 2; datasetIndex < 3; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
@@ -166,8 +166,8 @@ int main() {
 		myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
 		myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
 		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
-		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Matching Method,Random Replace Switch, Random Update Switch,";
-		myfile << "Update NB No, Feedback Switch,V Inc, V Desc, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
+		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Random Replace Switch, Random Update Switch,";
+		myfile << "Feedback Switch,V Inc, V Desc, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
 		myfile.close();
 
 		ROI_FRAME.create(FRAME_SIZE, CV_8UC1);

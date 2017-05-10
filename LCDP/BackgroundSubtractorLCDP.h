@@ -208,6 +208,8 @@ protected:
 	cv::Mat resMinLCDPDistance;
 	// Minimum RGB distance
 	cv::Mat resMinRGBDistance;
+	// Current pixel distance
+	cv::Mat resCurrPxDistance;
 	// Current LCDP pixel distance
 	cv::Mat resCurrLCDPPxDistance;
 	// Current LCDP pixel distance

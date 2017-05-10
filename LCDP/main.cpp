@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL";
+	programVersion = "RL V1.5 ALL Test 1.4";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -62,14 +62,14 @@ int main() {
 
 	// Total number of words per pixel
 	//double WordsNoList[3] = { 20,25,30 };
-	size_t Words_No = 25;
+	size_t Words_No = 30;
 	/*=====CLASSIFIER Parameters=====*/
 	//double ratio[2] = { 0.15,0.2 };
 	double descColourDiffRatio = 0.15;
 	// RGB detection switch
 	bool clsRGBDiffSwitch = true;
 	// RGB differences threshold
-	double clsRGBThreshold = 18;
+	double clsRGBThreshold = 10;
 	// Up RGB differences threshold
 	double clsUpRGBThreshold = 30;
 	// LCDP detection switch
@@ -78,7 +78,7 @@ int main() {
 	//double LCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
 	//double LCDPThresh[1] = { 0.2 };
-	double clsLCDPThreshold = 0.2;
+	double clsLCDPThreshold = 0.26;
 	// Up LCDP differences threshold
 	double clsUpLCDPThreshold = 0.7;
 	// Maximum number of LCDP differences threshold
@@ -87,7 +87,7 @@ int main() {
 	bool clsNbMatchSwitch = true;
 	// Matching threshold
 	//double MatchingThresholdList[4] = { 2,3,4,5 };
-	int clsMatchingThreshold = 5;
+	int clsMatchingThreshold = 3;
 
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
@@ -99,10 +99,10 @@ int main() {
 
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
-	float upDynamicRateIncrease = 0.2f;
+	float upDynamicRateIncrease = 0.01f;
 	// Feedback V(x) Decrement
 	//float DynamicRateDecrease[3] = { 0.4f,0.3f,0.1f };
-	float upDynamicRateDecrease = 0.5f;
+	float upDynamicRateDecrease = 0.005f;
 	// Feedback T(x) Increment
 	float upUpdateRateIncrease = 0.5f;
 	// Feedback T(x) Decrement
@@ -123,18 +123,18 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 2; datasetIndex < 3; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex <12; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
 			break;
-		case 1: filename = "cubicle";
+		case 4: filename = "cubicle";
 			break;
-		case 2:filename = "canoe";
+		case 1: filename = "canoe";
 			break;
 		case 3: filename = "fountain02";
 			break;
-		case 4:filename = "sofa";
+		case 2: filename = "sofa";
 			break;
 		case 5: filename = "highway";
 			break;
@@ -144,11 +144,11 @@ int main() {
 			break;
 		case 8: filename = "tunnelExit_0_35fps";
 			break;
-		case 9:filename = "port_0_17fps";
+		case 9: filename = "port_0_17fps";
 			break;
-		case 10:filename = "PETS2006";
+		case 10: filename = "PETS2006";
 			break;
-		case 11:filename = "turnpike_0_5fps";
+		case 11: filename = "turnpike_0_5fps";
 			break;
 		default:
 			std::cout << "Error occurs!";

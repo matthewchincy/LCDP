@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 1.4";
+	programVersion = "RL V1.5 ALL Test 2.0";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -99,10 +99,12 @@ int main() {
 
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
+	//float upDynamicRateIncrease = 0.01f;
 	float upDynamicRateIncrease = 0.01f;
 	// Feedback V(x) Decrement
 	//float DynamicRateDecrease[3] = { 0.4f,0.3f,0.1f };
-	float upDynamicRateDecrease = 0.005f;
+	//float upDynamicRateDecrease = 0.005f;
+	float upDynamicRateDecrease = 0.05f;
 	// Feedback T(x) Increment
 	float upUpdateRateIncrease = 0.5f;
 	// Feedback T(x) Decrement
@@ -123,32 +125,32 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 0; datasetIndex <12; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex <6; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
 			break;
 		case 4: filename = "cubicle";
 			break;
-		case 1: filename = "canoe";
+		case 6: filename = "canoe";
 			break;
-		case 3: filename = "fountain02";
+		case 7: filename = "fountain02";
 			break;
-		case 2: filename = "sofa";
+		case 8: filename = "sofa";
 			break;
-		case 5: filename = "highway";
+		case 9: filename = "highway";
 			break;
-		case 6: filename = "office";
+		case 10: filename = "office";
 			break;
-		case 7: filename = "badminton";
+		case 5: filename = "badminton";
 			break;
-		case 8: filename = "tunnelExit_0_35fps";
+		case 11: filename = "tunnelExit_0_35fps";
 			break;
-		case 9: filename = "port_0_17fps";
+		case 3: filename = "port_0_17fps";
 			break;
-		case 10: filename = "PETS2006";
+		case 2: filename = "PETS2006";
 			break;
-		case 11: filename = "turnpike_0_5fps";
+		case 1: filename = "turnpike_0_5fps";
 			break;
 		default:
 			std::cout << "Error occurs!";

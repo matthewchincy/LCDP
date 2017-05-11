@@ -40,6 +40,8 @@ protected:
 		int p;
 		// Store the frame index of the last occurences of this descriptor
 		int q;
+		int lastF;
+		int nowF;
 		// Store the pixel's LCDP values
 		int LCDP[16];
 	};

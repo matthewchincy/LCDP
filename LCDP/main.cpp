@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 2.0";
+	programVersion = "RL V1.5 ALL Test 2.2";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -83,7 +83,7 @@ int main() {
 	double clsUpLCDPThreshold = 0.7;
 	// Maximum number of LCDP differences threshold
 	double clsLCDPMaxThreshold = 0.7;
-	// Neighbourhood matching switch
+	// Neighborhood matching switch
 	bool clsNbMatchSwitch = true;
 	// Matching threshold
 	//double MatchingThresholdList[4] = { 2,3,4,5 };
@@ -91,9 +91,9 @@ int main() {
 
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
-	bool upRandomReplaceSwitch = true;
-	// Random update neighbourhood model switch
-	bool upRandomUpdateNbSwitch = true;
+	bool upRandomReplaceSwitch = false;
+	// Random update neighborhood model switch
+	bool upRandomUpdateNbSwitch = false;
 	// Feedback loop switch
 	bool upFeedbackSwitch = true;
 
@@ -125,7 +125,7 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 0; datasetIndex <6; datasetIndex++) {
+	for (size_t datasetIndex = 10; datasetIndex <11; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
@@ -187,7 +187,7 @@ int main() {
 		// Current process result folder name
 		saveFolderName = versionFolderName + "/" + programVersion + "-" + startTime;
 
-		// Declare background subtractor construtor
+		// Declare background subtractor constructor
 		BackgroundSubtractorLCDP backgroundSubtractorLCDP(Words_No, PreSwitch,
 			descColourDiffRatio, clsRGBDiffSwitch, clsRGBThreshold, clsUpRGBThreshold, clsLCDPDiffSwitch,
 			clsLCDPThreshold, clsUpLCDPThreshold, clsLCDPMaxThreshold, clsMatchingThreshold,
@@ -222,7 +222,7 @@ int main() {
 				imageSaveFolder = resultFolderName + s;
 				cv::imwrite(imageSaveFolder, fgMask);
 			}
-			// If 'esc' key is pressed, br	eak loop
+			// If 'esc' key is pressed, break loop
 			if (cv::waitKey(1) == 27)
 			{
 				std::cout << "Program ended by users." << std::endl;

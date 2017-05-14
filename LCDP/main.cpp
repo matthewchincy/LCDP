@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 2.2";
+	programVersion = "RL V1.5 ALL Test 3.0";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -78,12 +78,12 @@ int main() {
 	//double LCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
 	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
 	//double LCDPThresh[1] = { 0.2 };
-	double clsLCDPThreshold = 0.26;
+	double clsLCDPThreshold = 0.25;
 	// Up LCDP differences threshold
 	double clsUpLCDPThreshold = 0.7;
 	// Maximum number of LCDP differences threshold
 	double clsLCDPMaxThreshold = 0.7;
-	// Neighborhood matching switch
+	// neighborhood matching switch
 	bool clsNbMatchSwitch = true;
 	// Matching threshold
 	//double MatchingThresholdList[4] = { 2,3,4,5 };
@@ -91,7 +91,7 @@ int main() {
 
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
-	bool upRandomReplaceSwitch = false;
+	bool upRandomReplaceSwitch = true;
 	// Random update neighborhood model switch
 	bool upRandomUpdateNbSwitch = false;
 	// Feedback loop switch
@@ -100,11 +100,13 @@ int main() {
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
 	//float upDynamicRateIncrease = 0.01f;
-	float upDynamicRateIncrease = 0.01f;
+	float upDynamicRateIncrease = 0.005f;
 	// Feedback V(x) Decrement
 	//float DynamicRateDecrease[3] = { 0.4f,0.3f,0.1f };
 	//float upDynamicRateDecrease = 0.005f;
 	float upDynamicRateDecrease = 0.05f;
+	// Minimum of Feedback V(x) value
+	float upMinDynamicRate = 0.3f;
 	// Feedback T(x) Increment
 	float upUpdateRateIncrease = 0.5f;
 	// Feedback T(x) Decrement
@@ -113,6 +115,16 @@ int main() {
 	float upUpdateRateLowest = 2.0f;
 	// Feedback T(x) Highest
 	float upUpdateRateHighest = 255.0f;
+
+	/*=====RGB Dark Pixel Parameter=====*/
+	// Minimum Intensity Ratio
+	float darkMinIntensityRatio = 0.25;
+	// Maximum Intensity Ratio
+	float darkMaxIntensityRatio = 0.8;
+	// R-channel different ratio
+	float darkRDiffRatio = 0.15;
+	// G-channel different ratio
+	float darkGDiffRatio = 0.1;
 
 	/*=====POST PROCESS Parameters=====*/
 	bool PostSwitch = false;
@@ -125,32 +137,30 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 10; datasetIndex <11; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex <1; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
 			break;
-		case 4: filename = "cubicle";
+		case 1: filename = "cubicle";
 			break;
-		case 6: filename = "canoe";
+		case 2: filename = "canoe";
 			break;
-		case 7: filename = "fountain02";
+		case 3: filename = "fountain02";
 			break;
-		case 8: filename = "sofa";
+		case 4: filename = "sofa";
 			break;
-		case 9: filename = "highway";
+		case 5: filename = "highway";
 			break;
-		case 10: filename = "office";
+		case 6: filename = "office";
 			break;
-		case 5: filename = "badminton";
+		case 7: filename = "badminton";
 			break;
-		case 11: filename = "tunnelExit_0_35fps";
+		case 8: filename = "tunnelExit_0_35fps";
 			break;
-		case 3: filename = "port_0_17fps";
+		case 9: filename = "PETS2006";
 			break;
-		case 2: filename = "PETS2006";
-			break;
-		case 1: filename = "turnpike_0_5fps";
+		case 10: filename = "fall";
 			break;
 		default:
 			std::cout << "Error occurs!";
@@ -189,11 +199,13 @@ int main() {
 
 		// Declare background subtractor constructor
 		BackgroundSubtractorLCDP backgroundSubtractorLCDP(Words_No, PreSwitch,
-			descColourDiffRatio, clsRGBDiffSwitch, clsRGBThreshold, clsUpRGBThreshold, clsLCDPDiffSwitch,
+			descColourDiffRatio, clsRGBDiffSwitch, clsRGBThreshold, clsLCDPDiffSwitch,
 			clsLCDPThreshold, clsUpLCDPThreshold, clsLCDPMaxThreshold, clsMatchingThreshold,
 			clsNbMatchSwitch, ROI_FRAME, FRAME_SIZE, upRandomReplaceSwitch, upRandomUpdateNbSwitch,
-			upFeedbackSwitch, upDynamicRateIncrease, upDynamicRateDecrease, upUpdateRateIncrease,
-			upUpdateRateDecrease, upUpdateRateLowest, upUpdateRateHighest, PostSwitch);
+			upFeedbackSwitch, upDynamicRateIncrease, upDynamicRateDecrease, upMinDynamicRate, upUpdateRateIncrease,
+			upUpdateRateDecrease, upUpdateRateLowest, upUpdateRateHighest,
+			darkMinIntensityRatio, darkMaxIntensityRatio, darkRDiffRatio, darkGDiffRatio,
+			PostSwitch);
 
 		// Initialize background subtractor
 		backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
@@ -202,6 +214,7 @@ int main() {
 			s2 = saveFolderName.c_str();
 			_mkdir(s2);
 			SaveParameter(versionFolderName, saveFolderName);
+			backgroundSubtractorLCDP.folderName = saveFolderName;
 			backgroundSubtractorLCDP.SaveParameter(versionFolderName, saveFolderName);
 			resultFolderName = saveFolderName + "/results";
 			s2 = resultFolderName.c_str();

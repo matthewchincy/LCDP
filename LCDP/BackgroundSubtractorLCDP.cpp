@@ -5,7 +5,7 @@
 #include <vector>
 #include <time.h>
 
-// Parameters used to define 'unstable' regions, based on segmentation noise/bg dynamics and local distance threshold values
+// Parameters used to define 'unstable' regions, based on segm noise/bg dynamics and local distance threshold values
 #define UNSTABLE_REG_RATIO_MIN  (0.10f)
 // Parameter used to average the min distance
 #define MIN_DISTANCE_ALPHA (0.01f)
@@ -13,16 +13,16 @@
 #define DEFAULT_FRAME_SIZE cv::Size(320,240)
 // Pre-processing Gaussian size
 #define PRE_DEFAULT_GAUSSIAN_SIZE cv::Size(9,9)
-// Minimum value of dynamic rate, V(x)
-#define MIN_DYNAMIC_RATE (0.3f)
 
 /*******CONSTRUCTOR*******/ // Checked
 BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(size_t inputWordsNo, bool inputPreSwitch,
-	double inputDescColourDiffRatio, bool inputClsRGBDiffSwitch, double inputClsRGBThreshold, double inputClsUpRGBThreshold, bool inputClsLCDPDiffSwitch,
+	double inputDescColourDiffRatio, bool inputClsRGBDiffSwitch, double inputClsRGBThreshold, bool inputClsLCDPDiffSwitch,
 	double inputClsLCDPThreshold, double inputClsUpLCDPThreshold, double inputClsLCDPMaxThreshold, int inputClsMatchThreshold,
 	bool inputClsNbMatchSwitch, cv::Mat inputROI, cv::Size inputFrameSize, bool inputUpRandomReplaceSwitch, bool inputUpRandomUpdateNbSwitch,
-	bool inputUpFeedbackSwitch, float inputUpDynamicRateIncrease, float inputUpDynamicRateDecrease, float inputUpUpdateRateIncrease,
-	float inputUpUpdateRateDecrease, float inputUpUpdateRateLowest, float inputUpUpdateRateHighest, bool inputPostSwitch) :
+	bool inputUpFeedbackSwitch, float inputUpDynamicRateIncrease, float inputUpDynamicRateDecrease,float inputUpMinDynamicRate, float inputUpUpdateRateIncrease,
+	float inputUpUpdateRateDecrease, float inputUpUpdateRateLowest, float inputUpUpdateRateHighest, 
+	float inputDarkMinIntensityRatio, float inputDarkMaxIntensityRatio, float inputDarkRDiffRatio, float inputDarkGDiffRatio,
+	bool inputPostSwitch) :
 	/*=====LOOK-UP TABLE=====*/
 	// Internal pixel info LUT for all possible pixel indexes
 	pxInfoLUTPtr(nullptr),
@@ -66,8 +66,6 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(size_t inputWordsNo, bool inp
 	clsRGBDiffSwitch(inputClsRGBDiffSwitch),
 	// RGB differences threshold
 	clsRGBThreshold(inputClsRGBThreshold),
-	// UP RGB differences threshold
-	clsUpRGBThreshold(inputClsUpRGBThreshold),
 	// LCDP detection switch
 	clsLCDPDiffSwitch(inputClsLCDPDiffSwitch),
 	// LCDP differences threshold
@@ -76,7 +74,7 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(size_t inputWordsNo, bool inp
 	clsUpLCDPThreshold(inputClsUpLCDPThreshold),
 	// Maximum number of LCDP differences threshold
 	clsLCDPMaxThreshold(inputClsLCDPMaxThreshold),
-	// Neighborhood matching switch
+	// neighborhood matching switch
 	clsNbMatchSwitch(inputClsNbMatchSwitch),
 	// Matching threshold
 	clsMatchThreshold(inputClsMatchThreshold),
@@ -104,6 +102,8 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(size_t inputWordsNo, bool inp
 	upDynamicRateIncrease(inputUpDynamicRateIncrease),
 	// Feedback V(x) Decrement
 	upDynamicRateDecrease(inputUpDynamicRateDecrease),
+	// Feedback V(x) Minimum
+	upMinDynamicRate(inputUpMinDynamicRate),
 	// Feedback T(x) Increment
 	upUpdateRateIncrease(inputUpUpdateRateIncrease),
 	// Feedback T(x) Decrement
@@ -112,6 +112,16 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(size_t inputWordsNo, bool inp
 	upUpdateRateLowerCap(inputUpUpdateRateLowest),
 	// Feedback T(x) Highest
 	upUpdateRateUpperCap(inputUpUpdateRateHighest),
+
+	/*====RGB Dark Pixel Parameter=====*/
+	// Minimum Intensity Ratio
+	darkMinIntensityRatio(inputDarkMinIntensityRatio),
+	// Maximum Intensity Ratio
+	darkMaxIntensityRatio(inputDarkMaxIntensityRatio),
+	// R-channel different ratio
+	darkRDiffRatio(inputDarkRDiffRatio),
+	// G-channel different ratio
+	darkGDiffRatio(inputDarkGDiffRatio),
 
 	/*====POST Parameters=====*/
 	// Post processing switch
@@ -152,10 +162,10 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	currWordPtr = new DescriptorStruct[frameInitTotalPixel];
 	memset(currWordPtr, 0, sizeof(DescriptorStruct)*frameInitTotalPixel);
 	currWordPtrIter = currWordPtr;
-	
+
 	/*=====CLASSIFIER Parameters=====*/
 	// Minimum persistence threshold value 
-	clsMinPersistenceThreshold = (1.0f / descOffsetValue) * 2;
+	clsMinPersistenceThreshold = (1.0f / descOffsetValue);
 	// Matched persistence value threshold
 	clsPersistenceThreshold.create(frameSize, CV_32FC1);
 	clsPersistenceThreshold = cv::Scalar(clsMinPersistenceThreshold);
@@ -171,7 +181,7 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 			tempMedianFilterSize = tempMedianFilterSize - 1;
 		// Current kernel size for median blur post-processing filtering
 		postMedianFilterSize = tempMedianFilterSize;
-		// Specifies the pixel update spread range
+		// Specifies the PX update spread range
 		upUse3x3Spread = !(frameInitTotalPixel > (DEFAULT_FRAME_SIZE.area() * 2));
 		// Current learning rate caps
 		upLearningRateLowerCap = upUpdateRateLowerCap;
@@ -181,64 +191,40 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 		/*=====POST-PROCESS Parameters=====*/
 		// Current kernel size for median blur post-processing filtering
 		postMedianFilterSize = postMedianFilterSize;
-		// Specifies the pixel update spread range
+		// Specifies the PX update spread range
 		upUse3x3Spread = true;
 		// Current learning rate caps
 		upLearningRateLowerCap = upUpdateRateLowerCap * 2;
 		upLearningRateUpperCap = upUpdateRateUpperCap * 2;
 	}
-	
+
 	/*=====RESULTS=====*/
 	// Per-pixel distance thresholds ('R(x)', but used as a relative value to determine both 
 	// intensity and descriptor variation thresholds)
-	resLCDPDistThreshold.create(frameSize, CV_32FC1);
-	resLCDPDistThreshold = cv::Scalar(1.0f);
-	resRGBDistThreshold.create(frameSize, CV_32FC1);
-	resRGBDistThreshold = cv::Scalar(1.0f);
+	resDistThreshold.create(frameSize, CV_32FC1);
+	resDistThreshold = cv::Scalar(1.0f);
 	// Per-pixel dynamic learning rate ('V(x)')
-	resLCDPDynamicRate.create(frameSize, CV_32FC1);
-	resLCDPDynamicRate = cv::Scalar(1.0f);
-	resRGBDynamicRate.create(frameSize, CV_32FC1);
-	resRGBDynamicRate = cv::Scalar(1.0f);
+	resDynamicRate.create(frameSize, CV_32FC1);
+	resDynamicRate = cv::Scalar(1.0f);
 	// Per-pixel update rates('T(x)')
-	resLCDPUpdateRate.create(frameSize, CV_32FC1);
-	resLCDPUpdateRate = cv::Scalar(upLearningRateLowerCap);
-	resRGBUpdateRate.create(frameSize, CV_32FC1);
-	resRGBUpdateRate = cv::Scalar(upLearningRateLowerCap);	
+	resUpdateRate.create(frameSize, CV_32FC1);
+	resUpdateRate = cv::Scalar(upLearningRateLowerCap);
+	// Current pixel distance
+	resCurrPxDistance.create(frameSize, CV_32FC1);
+	resCurrPxDistance = cv::Scalar(0.0f);
 	// Minimum LCDP distance
 	resMinLCDPDistance.create(frameSize, CV_32FC1);
 	resMinLCDPDistance = cv::Scalar(1.0f);
 	// Minimum RGB distance
 	resMinRGBDistance.create(frameSize, CV_32FC1);
 	resMinRGBDistance = cv::Scalar(1.0f);
-	// Current pixel distance
-	resCurrPxDistance.create(frameSize, CV_32FC1);
-	resCurrPxDistance = cv::Scalar(0.0f);
-	// Current LCDP pixel distance
-	resCurrLCDPPxDistance.create(frameSize, CV_32FC1);
-	resCurrLCDPPxDistance = cv::Scalar(0.0f);
-	// Current RGB pixel distance
-	resCurrRGBPxDistance.create(frameSize, CV_32FC1);
-	resCurrRGBPxDistance = cv::Scalar(0.0f);
+	// Total PERSISTENCE
+	resTotalPersistence.create(frameSize, CV_32FC1);
+	resTotalPersistence = cv::Scalar(1.0f);
 	// Current foreground mask
 	resCurrFGMask.create(frameSize, CV_8UC1);
 	resCurrFGMask = cv::Scalar_<uchar>::all(0);
-	// Current LCDP foreground mask
-	resCurrLCDPFGMask.create(frameSize, CV_8UC1);
-	resCurrLCDPFGMask = cv::Scalar_<uchar>::all(0);
-	// Current Up LCDP foreground mask
-	resCurrUpLCDPFGMask.create(frameSize, CV_8UC1);
-	resCurrUpLCDPFGMask = cv::Scalar_<uchar>::all(0);
-	// Current RGB foreground mask
-	resCurrRGBFGMask.create(frameSize, CV_8UC1);
-	resCurrRGBFGMask = cv::Scalar_<uchar>::all(0);
-	// Current Up RGB foreground mask
-	resCurrUpRGBFGMask.create(frameSize, CV_8UC1);
-	resCurrUpRGBFGMask = cv::Scalar_<uchar>::all(0);
 
-	// Dark Pixel
-	resDarkPixel.create(frameSize, CV_8UC1);
-	resDarkPixel = cv::Scalar_<uchar>::all(0);
 	// Previous foreground mask
 	resLastFGMask.create(frameSize, CV_8UC1);
 	resLastFGMask = cv::Scalar_<uchar>::all(0);
@@ -263,7 +249,7 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	size_t pxPointer = 0;
 	// PRE PROCESSING
 	cv::GaussianBlur(inputFrame, inputFrame, preGaussianSize, 0, 0);
-	
+
 	for (size_t rowIndex = 0; rowIndex < frameSize.height; rowIndex++) {
 		for (size_t colIndex = 0; colIndex < frameSize.width; colIndex++) {
 			// Coordinate Y value
@@ -297,15 +283,12 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	cv::cvtColor(inputImg, inputGrayImg, CV_RGB2GRAY);
 	// Update average image
 	resLastImg = (inputImg + (resLastImg*(frameIndex - 1))) / frameIndex;
-	resLastGrayImg = (inputGrayImg + (resLastGrayImg*(frameIndex - 1))) / frameIndex;
 	// PRE PROCESSING
 	if (preSwitch) {
 		cv::GaussianBlur(inputImg, inputImg, preGaussianSize, 0, 0);
 	}
 
 	// DETECTION PROCESS
-	// Generate a map to indicate dark pixel (255: Not dark pixel, 0: Dark pixel)
-	DarkPixelGenerator(inputGrayImg, inputImg, resLastGrayImg, resLastImg, resDarkPixel);
 	// BG Word pointer
 	DescriptorStruct * bgWord = nullptr;
 	// Current bg word's persistence	
@@ -314,46 +297,26 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		if (frameRoi.data[pxPointer]) {
 			// Descriptor Generator-Generate pixels' descriptor (RGB+LCDP)
 			DescriptorGenerator(inputImg, pxInfoLUTPtr[pxPointer], currWordPtr[pxPointer]);
-			// Current distance threshold ('R(x)')
-			float * currLCDPDistThreshold = (float*)(resLCDPDistThreshold.data + (pxPointer * 4));
-			float * currRGBDistThreshold = (float*)(resRGBDistThreshold.data + (pxPointer * 4));
-			// Current dynamic learning rate ('V(x)')
-			float * currLCDPDynamicRate = (float*)(resLCDPDynamicRate.data + (pxPointer * 4));
-			float * currRGBDynamicRate = (float*)(resRGBDynamicRate.data + (pxPointer * 4));
+			// Current distance threshold ('R(x)')r
+			float * currDistThreshold = (float*)(resDistThreshold.data + (pxPointer * 4));
+			// Current dynamic rate ('V(x)')
+			float * currDynamicRate = (float*)(resDynamicRate.data + (pxPointer * 4));
 			// Current pixel's update rate ('T(x)')
-			float * currLCDPUpdateRate = (float*)(resLCDPUpdateRate.data + (pxPointer * 4));
-			float * currRGBUpdateRate = (float*)(resRGBUpdateRate.data + (pxPointer * 4));
-			const size_t LCDPUpdateRate = ceil(*currLCDPUpdateRate);
-			const size_t RGBUpdateRate = ceil(*currRGBUpdateRate);
-			
-			// Current persistence's threshold
-			float * currPersistenceThreshold = (float*)(clsPersistenceThreshold.data + (pxPointer * 4));
+			float * currUpdateRate = (float*)(resUpdateRate.data + (pxPointer * 4));
+			const size_t updateRate = ceil(*currUpdateRate);
 			// Model index for current pixel
 			const size_t currModelIndex = pxInfoLUTPtr[pxPointer].modelIndex;
-			double newLCDPDistance = std::pow(2, (*currLCDPDistThreshold)) / 512;
+
 			// LCDP differences threshold
-			const double currLCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, (std::pow(2, double((*currLCDPDistThreshold))) / 512)));
-			//const double currLCDPThreshold = clsLCDPThreshold;
-			//const size_t nCurrTotDescDistThreshold = (size_t)1 << 2;
+			const double currLCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, (std::pow(2, double((*currDistThreshold))) / 512)));
 			// Up LCDP differences threshold
 			const double currUpLCDPThreshold = clsUpLCDPThreshold;
 			// RGB differences threshold
-			const double currRGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*currRGBDistThreshold)));
-			// const double currRGBThreshold =  floor(clsRGBThreshold*(*currRGBDistThreshold));
-			// Up RGB differences threshold
-			const double currUpRGBThreshold = clsUpRGBThreshold;
+			const double currRGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*currDistThreshold)));
+			// Persistence threshold
+			float * currPersistenceThreshold = (float*)(clsPersistenceThreshold.data + (pxPointer * 4));
 			// Current pixel's foreground mask
 			uchar * currFGMask = (resCurrFGMask.data + pxPointer);
-			// Current pixel's LCDP foreground mask
-			uchar * currLCDPFGMask = (resCurrLCDPFGMask.data + pxPointer);
-			// Current pixel's Up LCDP foreground mask
-			uchar * currUpLCDPFGMask = (resCurrUpLCDPFGMask.data + pxPointer);
-			// Current pixel's RGB foreground mask
-			uchar * currRGBFGMask = (resCurrRGBFGMask.data + pxPointer);
-			// Current pixel's Up RGB foreground mask
-			uchar * currUpRGBFGMask = (resCurrUpRGBFGMask.data + pxPointer);
-			// Current dark pixel result
-			uchar * currDarkPixel = (resDarkPixel.data + pxPointer);
 			// Total number of neighborhood pixel 8(3x3)/16(5x5)
 			size_t currDescNeighNo = descNbNo;
 			// Current pixel's descriptor
@@ -363,78 +326,174 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			float * minLCDPDistance = (float*)(resMinLCDPDistance.data + (pxPointer * 4));
 			// Current pixel's min RGB distance
 			float * minRGBDistance = (float*)(resMinRGBDistance.data + (pxPointer * 4));
+			// Current pixel's total persistence
+			float * totalPersistence = (float*)(resTotalPersistence.data + (pxPointer * 4));
 			// Current pixel distance
 			float * currPxDistance = (float*)(resCurrPxDistance.data + (pxPointer * 4));
-			// Current LCDP pixel distance
-			float * currLCDPPxDistance = (float*)(resCurrLCDPPxDistance.data + (pxPointer * 4));
-			// Current RGB pixel distance
-			float * currRGBPxDistance = (float*)(resCurrRGBPxDistance.data + (pxPointer * 4));
-
-			// Current pixel's model persistence 
-			float currPxPersistence = 0.0f;
 
 			// Last word's persistence
 			float currLastWordPersistence = FLT_MAX;
 			// Current pixel's background word index
 			int currLocalWordIdx = 0;
-
+			//if (pxPointer == 79948) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/79948.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		float tempDebugDistance = 1.0f;
+			//		bool DebugLCDPResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
+			//		myfile << tempDebugDistance << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 79288) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/79288.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		float tempDebugDistance = 1.0f;
+			//		bool DebugLCDPResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
+			//		myfile << tempDebugDistance << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 77835) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/77835.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		float tempDebugDistance = 1.0f;
+			//		bool DebugLCDPResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
+			//		myfile << tempDebugDistance << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 16909) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/16909.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		float tempDebugDistance = 1.0f;
+			//		bool DebugLCDPResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
+			//		myfile << tempDebugDistance << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 29931) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/29931.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		float tempDebugDistance = 1.0f;
+			//		bool DebugLCDPResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
+			//		myfile << tempDebugDistance << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 208964) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/208964.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 210420) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/210420.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 221597) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/221597.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 220950) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/220950.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 217400) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/217400.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 178998) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/178998.csv", std::ios::app);
+			//	myfile << frameIndex << ",";
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
 			// Number of potential matched model
-			int clsLCDPPotentialMatch = 0;
-			int clsUpLCDPPotentialNotMatch = 0;
-			int clsRGBPotentialMatch = 0;
-			int clsUpRGBPotentialNotMatch = 0;
-			if (pxPointer == 45117) {
-				std::ofstream myfile;
-				myfile.open("45117.csv", std::ios::app);
-				myfile << frameIndex << ",";
-				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
-				}
-				myfile << "\n";
-				myfile.close();
-			}
-			while (currLocalWordIdx < WORDS_NO && ((clsLCDPPotentialMatch < clsMatchThreshold) || (clsRGBPotentialMatch < clsMatchThreshold))) {
+			int clsPotentialMatch = 0;
+			while (currLocalWordIdx < WORDS_NO && (clsPotentialMatch < clsMatchThreshold)) {
 				// Current bg word
-				bgWord = (bgWordPtr + currModelIndex + currLocalWordIdx);							
+				bgWord = (bgWordPtr + currModelIndex + currLocalWordIdx);
 				GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
 				float tempLCDPDistance = 1.0f;
 				float tempRGBDistance = 1.0f;
-				bool LCDPResult = false;
-				bool upLCDPResult = false;
-				bool RGBResult = false;
-				bool upRGBResult = false;
-				// False:Match True:Not match
-				DescriptorMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, currUpLCDPThreshold, currRGBThreshold, currUpRGBThreshold,
-					tempLCDPDistance, tempRGBDistance, LCDPResult, upLCDPResult, RGBResult, upRGBResult);
-
-				if (((*bgWord).frameCount > 0) && (!LCDPResult)) {
-					//(*bgWord).frameCount += 1;
-					//(*bgWord).q = frameIndex;
-					clsLCDPPotentialMatch++;
-					// Update MIN LCDP distance
-					(*minLCDPDistance) = tempLCDPDistance < (*minLCDPDistance) ? tempLCDPDistance : (*minLCDPDistance);
-				}
-				else if (upLCDPResult) {
-					clsUpLCDPPotentialNotMatch++;
-				}				
-				if (((*bgWord).frameCount > 0) && (!RGBResult)) {
-					//if(LCDPResult) {
-					//	(*bgWord).frameCount += 1;
-					//	(*bgWord).q = frameIndex;
-					//}
-					clsRGBPotentialMatch++;
-					// Update MIN RGB distance
-					(*minRGBDistance) = tempRGBDistance < (*minRGBDistance) ? tempRGBDistance : (*minRGBDistance);
-				}
-				else if (upRGBResult) {
-					clsUpRGBPotentialNotMatch++;
-				}
-				// Both RGB and LCDP in model is match and no need update
-				if ((!LCDPResult) && (!RGBResult)) {
+				bool matchResult = false;
+				// False:Match true:Not match
+				DescriptorMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, currUpLCDPThreshold, currRGBThreshold,
+					tempLCDPDistance, tempRGBDistance, matchResult);
+				// Both BG
+				if (!matchResult) {
 					(*bgWord).frameCount += 1;
 					(*bgWord).q = frameIndex;
-					currPxPersistence = std::min(*(currPersistenceThreshold), currPxPersistence+currWordPersistence);
+					clsPotentialMatch++;
+					// Update MIN LCDP distance
+					(*minLCDPDistance) = std::min(tempLCDPDistance ,(*minLCDPDistance));
+					// Update MIN RGB distance
+					(*minRGBDistance) = std::min(tempRGBDistance, (*minRGBDistance));
+					// Update MIN PERSISTENCE distance
+					(*totalPersistence) = std::min((*currPersistenceThreshold),(*totalPersistence)+currWordPersistence);
 				}
 				// Sort background model based on persistence
 				if (currWordPersistence > currLastWordPersistence) {
@@ -458,103 +517,56 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				++currLocalWordIdx;
 			}
 			// Successful classified as BG Pixels
-			if ((clsLCDPPotentialMatch >= clsMatchThreshold) && (clsRGBPotentialMatch >= clsMatchThreshold)) {
+			if (clsPotentialMatch >= clsMatchThreshold) {
 				(*currFGMask) = 0;
-				(*currLCDPFGMask) = 0;
-				(*currRGBFGMask) = 0;
-				(*currLCDPDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currLCDPDynamicRate) - upDynamicRateDecrease);
-				(*currRGBDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currRGBDynamicRate) - upDynamicRateDecrease);
-				// Check dark pixel
-				if (*currDarkPixel) {
-					(*currDarkPixel) = 0;
-				}
+				(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
 			}
 			// Classified as FG Pixels
 			else {
-				if (clsLCDPPotentialMatch >= clsMatchThreshold) {
-					(*currLCDPFGMask) = 0;
-				}
-				else {
-					(*currLCDPFGMask) = 255;
-				}
-				if (clsRGBPotentialMatch >= clsMatchThreshold) {
-					(*currRGBFGMask) = 0;
-				}
-				else {
-					(*currRGBFGMask) = 255;
-				}
-				//size_t nbMatchNo = 0;
-				size_t nbLCDPMatchNo = 0;
-				size_t nbRGBMatchNo = 0;
+				(*currFGMask) = 255;
+				size_t nbMatchNo = 0;
 				if (clsNbMatchSwitch) {
 					// Compare with neighbor's model
-					// Neighbor matching size (Max: 7x7)					
-					if (*currLCDPFGMask) {
-						nbLCDPMatchNo = std::max(16.0f, std::floor((((*currLCDPDistThreshold) / 9) * 48)));
-					}
-					if (*currRGBFGMask) {
-						nbRGBMatchNo = std::max(16.0f, std::floor((((*currRGBDistThreshold) / 9) * 48)));
-					}
-					//nbMatchNo = std::max(16.0f, std::floor((((*currRGBDistThreshold) / 9) * 48)));
-					for (size_t nbIndex = 0; nbIndex < std::max(nbLCDPMatchNo,nbRGBMatchNo); nbIndex++) {
-						// Neighbor pixel pointer
+					// neighbor matching size (Max: 7x7)				
+					nbMatchNo = std::max(16.0f, std::floor((((*currDistThreshold) / 9) * 48)));
+					for (size_t nbIndex = 0; nbIndex < nbMatchNo; nbIndex++) {
+						// neighbor pixel pointer
 						size_t nbPxPointer = pxInfoLUTPtr[pxPointer].nbIndex[nbIndex].dataIndex;
+						// neighbor pixel's model index
+						const size_t nbModelIndex = pxInfoLUTPtr[pxPointer].nbIndex[nbIndex].modelIndex;
 						// Current neighbor pixel's matching threshold
 						int clsNBMatchThreshold = clsMatchThreshold;
 						// Number of potential matched model
-						int clsNBPotentialLCDPMatch = 0;
-						// int clsNBPotentialUpLCDPNotMatch = 0;
-						// Number of potential matched model in RGB
-						int clsNBPotentialRGBMatch = 0;
-						// int clsNBPotentialUpRGBNotMatch = 0;
-						// Neighbor pixel's model index
-						const size_t nbModelIndex = pxInfoLUTPtr[pxPointer].nbIndex[nbIndex].modelIndex;
+						int clsNBPotentialMatch = 0;
 						// Current neighbor distance threshold
-						float * nbLCDPDistThreshold = (float*)(resLCDPDistThreshold.data + (nbPxPointer * 4));
-						float * nbRGBDistThreshold = (float*)(resRGBDistThreshold.data + (nbPxPointer * 4));
-						// Neighbor LCD descriptor threshold
-						const double nbLCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, (std::pow(2, double((*nbLCDPDistThreshold))) / 512)));
-						// Neighbor Up LCD descriptor threshold
+						float * nbDistThreshold = (float*)(resDistThreshold.data + (nbPxPointer * 4));
+						// neighbor LCD descriptor threshold
+						const double nbLCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, (std::pow(2, double((*nbDistThreshold))) / 512)));
+						// neighbor Up LCD descriptor threshold
 						const double nbUpLCDPThreshold = clsUpLCDPThreshold;
-						// Neighbor RGB descriptor threshold
-						const double nbRGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*nbRGBDistThreshold)));
-						// Neighbor Up RGB descriptor threshold
-						const double nbUpRGBThreshold = clsUpRGBThreshold;
+						// neighbor RGB descriptor threshold
+						const double nbRGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*nbDistThreshold)));
 
 						float nbLastWordPersistence = FLT_MAX;
 						size_t nbLocalWordIdx = 0;
-						while ((nbLocalWordIdx < WORDS_NO) && ((clsNBPotentialLCDPMatch < clsNBMatchThreshold) || (clsNBPotentialRGBMatch < clsNBMatchThreshold))) {
+						while ((nbLocalWordIdx < WORDS_NO) && (clsNBPotentialMatch < clsNBMatchThreshold)) {
 
 							bgWord = (bgWordPtr + nbModelIndex + nbLocalWordIdx);
 							GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
 							float tempLCDPDistance = 1.0f;
 							float tempRGBDistance = 1.0f;
 
-							bool LCDPResult = false;
-							bool upLCDPResult = false;
-							bool RGBResult = false;
-							bool upRGBResult = false;
+							bool matchResult = false;
 							// False:Match true:Not match
-							DescriptorMatching(*bgWord, currWord, currDescNeighNo, nbLCDPThreshold, nbUpLCDPThreshold, nbRGBThreshold, nbUpRGBThreshold,
-								tempLCDPDistance, tempRGBDistance, LCDPResult, upLCDPResult, RGBResult, upRGBResult);
+							DescriptorMatching(*bgWord, currWord, currDescNeighNo, nbLCDPThreshold, nbUpLCDPThreshold, nbRGBThreshold,
+								tempLCDPDistance, tempRGBDistance, matchResult);
 
-							if (((*bgWord).frameCount > 0) && (!LCDPResult)) {
-								clsNBPotentialLCDPMatch++;
-							}
-							//else if (upLCDPResult) {
-							//	clsUpLCDPPotentialNotMatch++;
-							//}
-
-							if (((*bgWord).frameCount > 0)  && (!RGBResult)) {
-								clsNBPotentialRGBMatch++;
-							}
-							//else if (upRGBResult) {
-							//	clsUpRGBPotentialNotMatch++;
-							//}
-							if((!LCDPResult) &&(!RGBResult)){
+							if (!matchResult) {
 								(*bgWord).frameCount += 1;
 								(*bgWord).q = frameIndex;
+								clsNBPotentialMatch++;
 							}
+						
 							// Update position of model in background model
 							if (currWordPersistence > nbLastWordPersistence) {
 								std::swap(bgWordPtr[nbModelIndex + nbLocalWordIdx], bgWordPtr[nbModelIndex + nbLocalWordIdx - 1]);
@@ -575,68 +587,16 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 							}
 							++nbLocalWordIdx;
 						}
-						// BG Pixels 
-						if (nbIndex < nbLCDPMatchNo) {
-							if (clsNBPotentialLCDPMatch >= clsNBMatchThreshold) {
-								(*currLCDPFGMask) = 0;
-							}
-						}
-						if (nbIndex < nbRGBMatchNo) {
-							if (clsNBPotentialRGBMatch >= clsNBMatchThreshold) {
-								(*currRGBFGMask) = 0;
-							}
-						}
-						if (!(*currLCDPFGMask) && !(*currRGBFGMask)) {
+						if (clsNBPotentialMatch >= clsNBMatchThreshold) {
+							(*currFGMask) = 0;
+							(*currDynamicRate) += upDynamicRateIncrease;
 							break;
 						}
 					}
-					
 				}
-				//if ((clsUpLCDPPotentialNotMatch / (nbLCDPMatchNo + 1)) > (0.7*WORDS_NO)) {
-				if (clsUpLCDPPotentialNotMatch > (0.7*WORDS_NO)) {
-					(*currUpLCDPFGMask) = 255;
-				}
-				//if ((clsUpRGBPotentialNotMatch / (nbRGBMatchNo + 1)) > (0.7*WORDS_NO)) {
-				if (clsUpRGBPotentialNotMatch > (0.7*WORDS_NO)) {
-					(*currUpRGBFGMask) = 255;
-				}
-
-				// LCDP:BG, RGB:FG
-				if (!(*currLCDPFGMask) && (*currRGBFGMask)) {
-					// Check dark pixel
-					if (!(*currDarkPixel)) {
-						(*currFGMask) = 0;
-					}
-					else {
-						(*currFGMask) = 255;
-						//(*currLCDPDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currLCDPDynamicRate) - upDynamicRateDecrease);
-						//(*currRGBDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currRGBDynamicRate) - upDynamicRateDecrease);
-					}
-				}
-				// LCDP:FG, RGB:BG
-				else if ((*currLCDPFGMask) && (!*currRGBFGMask)) {
-					// Use different LCDP threshold
-					if (currUpLCDPFGMask) {
-						(*currFGMask) = 255;
-						//(*currLCDPDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currLCDPDynamicRate) - upDynamicRateDecrease);
-						//(*currRGBDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currRGBDynamicRate) - upDynamicRateDecrease);
-					}
-					else {
-						//(*currDarkPixel) = 0;
-						(*currFGMask) = 0;
-					}
-				}
-				// LCDP:BG, RGB:BG
-				else if ((!*currLCDPFGMask) && (!*currRGBFGMask)) {
-					(*currFGMask) = 0;
-					(*currLCDPDynamicRate) += upDynamicRateIncrease;
-					(*currRGBDynamicRate) += upDynamicRateIncrease;
-				}
-				// LCDP:FG, RGB:FG
-				else if ((*currLCDPFGMask) && (*currRGBFGMask)) {
-					(*currFGMask) = 255;
-					//(*currLCDPDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currLCDPDynamicRate) - upDynamicRateDecrease);
-					//(*currRGBDynamicRate) = std::max(MIN_DYNAMIC_RATE, (*currRGBDynamicRate) - upDynamicRateDecrease);
+				
+				if (*currFGMask) {
+					(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
 				}
 			}
 			// UPDATE PROCESS
@@ -644,11 +604,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			if (upRandomReplaceSwitch) {
 				if ((*currFGMask)) {
 					// FG
-
-					bool checkLCDP = (std::rand() % (LCDPUpdateRate * 2) == 0);
-					bool checkRGB = (std::rand() % (RGBUpdateRate * 2) == 0);
-					if (checkLCDP && checkRGB) {
-						 bgWord = (bgWordPtr + currModelIndex + WORDS_NO - 1);
+					if (std::rand() % (updateRate*2) == 0) {
+						bgWord = (bgWordPtr + currModelIndex + WORDS_NO - 1);
 						for (size_t channel = 0; channel < 3; channel++) {
 							(*bgWord).rgb[channel] = currWord.rgb[channel];
 						}
@@ -656,36 +613,30 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 							(*bgWord).LCDP[channel] = currWord.LCDP[channel];
 						}
 						(*bgWord).nowF = frameIndex;
+						(*bgWord).gray = currWord.gray;
 					}
 				}
 				else {
 					// BG
-
-					bool checkLCDP = (std::rand() % (LCDPUpdateRate) == 0);
-					bool checkRGB = (std::rand() % (RGBUpdateRate) == 0);
-
-					if (checkLCDP && checkRGB) {
+					if (std::rand() % (updateRate) == 0) {
 						int randNum = rand() % WORDS_NO;
 						bgWord = (bgWordPtr + currModelIndex + randNum);
 
 						for (size_t channel = 0; channel < 3; channel++) {
 							(*bgWord).rgb[channel] = currWord.rgb[channel];
 						}
-
 						for (size_t channel = 0; channel < descNbNo; channel++) {
 							(*bgWord).LCDP[channel] = currWord.LCDP[channel];
 						}
 						(*bgWord).nowF = frameIndex;
+						(*bgWord).gray = currWord.gray;
 					}
 				}
 			}
 			// UPDATE PROCESS
 			// Randomly update a selected neighbor descriptor with current descriptor
 			if (upRandomUpdateNbSwitch) {
-				bool checkLCDP = (std::rand() % (LCDPUpdateRate) == 0);
-				bool checkRGB = (std::rand() % (RGBUpdateRate) == 0);
-
-				if (checkLCDP&&checkRGB) {
+				if (std::rand() % (updateRate) == 0) {
 					cv::Point sampleCoor;
 					if (!upUse3x3Spread) {
 						getRandSamplePosition_5x5(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
@@ -702,41 +653,26 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					int clsNBMatchThreshold = clsMatchThreshold;
 
 					// Number of potential matched LCDP model
-					int clsNBPotentialLCDPMatch= 0;
-					// Number of potential matched LCDP model with Up threshold
-					int clsNBPotentialMatchUpLCDP = 0;
-					// Number of potential matched RGB model
-					int clsNBPotentialRGBMatch = 0;
-					// Number of potential matched RGB model with Up threshold
-					int clsNBPotentialMatchUpRGB = 0;
+					int clsNBPotentialMatch = 0;
 
 					currLastWordPersistence = FLT_MAX;
 					currLocalWordIdx = 0;
-					while (currLocalWordIdx < WORDS_NO && ((clsNBPotentialLCDPMatch < clsNBMatchThreshold) || (clsNBPotentialRGBMatch < clsNBMatchThreshold))) {
+					while (currLocalWordIdx < WORDS_NO && (clsNBPotentialMatch < clsNBMatchThreshold)){
 						bgWord = (bgWordPtr + startNBModelIndex + currLocalWordIdx);
 						GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
 						float tempLCDPDistance = 0.0f;
 						float tempRGBDistance = 0.0f;
 
-						bool LCDPResult = false;
-						bool upLCDPResult = false;
-						bool RGBResult = false;
-						bool upRGBResult = false;
+						bool matchResult = false;
 						// False:Match true:Not match
-						DescriptorMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, currUpLCDPThreshold, currRGBThreshold, currUpRGBThreshold,
-							tempLCDPDistance, tempRGBDistance, LCDPResult, upLCDPResult, RGBResult, upRGBResult);
+						DescriptorMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, currUpLCDPThreshold, currRGBThreshold,
+							tempLCDPDistance, tempRGBDistance, matchResult);
 
-						if (((*bgWord).frameCount > 0) && (!LCDPResult)) {
-							clsNBPotentialLCDPMatch++;
-						}
-						if (((*bgWord).frameCount > 0) && (!RGBResult)) {
-							clsNBPotentialRGBMatch++;
-						}
-						if ((!LCDPResult) && (!RGBResult)) {
+						if (!matchResult) {
 							(*bgWord).frameCount += 1;
 							(*bgWord).q = frameIndex;
-
-						}
+							clsNBPotentialMatch++;
+						}						
 						// Update position of model in background model
 						if (currWordPersistence > currLastWordPersistence) {
 							std::swap(bgWordPtr[startNBModelIndex + currLocalWordIdx], bgWordPtr[startNBModelIndex + currLocalWordIdx - 1]);
@@ -759,51 +695,53 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					}
 				}
 			}
+
+			// Update minimum distance
+			if (*currFGMask) {
+				//FG
+				// Will add persistence as a distance
+				const float currNormalizedMinDist = std::max((((*currPersistenceThreshold) -(*totalPersistence))/ (*currPersistenceThreshold)), std::max(*minRGBDistance, *minLCDPDistance));
+				(*currPxDistance) = ((1 - MIN_DISTANCE_ALPHA)*(*currPxDistance)) + (MIN_DISTANCE_ALPHA*currNormalizedMinDist);
+			}
+			else {
+				//BG
+				const float currNormalizedMinDist = std::max(*minRGBDistance, *minLCDPDistance);
+				(*currPxDistance) = ((1 - MIN_DISTANCE_ALPHA)*(*currPxDistance)) + (MIN_DISTANCE_ALPHA*currNormalizedMinDist);
+			}
 			
 			if (upFeedbackSwitch) {
 				// Last foreground mask
 				uchar * lastFGMask = (uchar*)(resLastFGMask.data + pxPointer);
-				if ((*currFGMask)) {
-					(*currPxDistance) = ((1 - MIN_DISTANCE_ALPHA)*(*currPxDistance)) + (MIN_DISTANCE_ALPHA*(std::max(std::max(*minRGBDistance, *minLCDPDistance), ((*(currPersistenceThreshold)-currPxPersistence)/(*currPersistenceThreshold)))));
-				}
-				else {
-					(*currPxDistance) = ((1 - MIN_DISTANCE_ALPHA)*(*currPxDistance)) + (MIN_DISTANCE_ALPHA*(std::max(*minRGBDistance, *minLCDPDistance)));
-				}
-				// Update persistence threshold
-				bgWord = (bgWordPtr + currModelIndex);
-				GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currPxPersistence);
-				*(currPersistenceThreshold) = currPxPersistence / ((*currRGBDistThreshold) * 2);
-				//bool check1 = (((*currRGBPxDistance) < UNSTABLE_REG_RATIO_MIN) && (*currFGMask));
-				//bool check1 =(std::min(*minRGBDistance, *minLCDPDistance)< UNSTABLE_REG_RATIO_MIN) && (*currFGMask);
+				
 				bool check1 = ((*currPxDistance)< UNSTABLE_REG_RATIO_MIN) && (*currFGMask);
-				bool check2 = check1 && ((*currRGBUpdateRate) < upLearningRateUpperCap);
+				bool check2 = check1 && ((*currUpdateRate) < upLearningRateUpperCap);
 				if (check2) {
-					float valueIncrease = upUpdateRateIncrease / ((*currPxDistance)*(*currRGBDynamicRate));
+					float valueIncrease = upUpdateRateIncrease / ((*currPxDistance)*(*currDynamicRate));
 					if (isinf(valueIncrease)) {
-						valueIncrease = 100;
+						valueIncrease = 150;
 					}
-					(*currRGBUpdateRate) = std::min(upUpdateRateUpperCap, (*currRGBUpdateRate) + valueIncrease);
-					(*currLCDPUpdateRate) = std::min(upUpdateRateUpperCap, (*currLCDPUpdateRate) + valueIncrease);
+					(*currUpdateRate) = std::min(upUpdateRateUpperCap, (*currUpdateRate) + valueIncrease);
 				}
-				check2 = !check1 && ((*currRGBUpdateRate) > upLearningRateLowerCap);
+				check2 = !check1 && ((*currUpdateRate) >= upLearningRateLowerCap);
 				if (check2) {
-					float valueDecrease = ((upUpdateRateDecrease*(*currRGBDynamicRate)) / (*currPxDistance));
-					//if (isinf(valueDecrease)) {
-					//	valueDecrease = 20;
-					//}
-					(*currRGBUpdateRate) = std::max(upUpdateRateLowerCap, (*currRGBUpdateRate) - valueDecrease);
-					(*currLCDPUpdateRate) = std::max(upUpdateRateLowerCap, (*currLCDPUpdateRate) - valueDecrease);
+					float valueDecrease = ((upUpdateRateDecrease*(*currDynamicRate)) / (*currPxDistance));
+					if (isinf(valueDecrease)) {
+						valueDecrease = 10;
+					}
+
+					(*currUpdateRate) = std::max(upUpdateRateLowerCap, (*currUpdateRate) - valueDecrease);
 				}
-				check1 = (*currRGBDistThreshold) < (std::pow((1 + ((*currPxDistance) * 2)), 2));
-				// FG
+				check1 = (*currDistThreshold) < (std::pow((1 + ((*currPxDistance) * 2)), 2));
 				if (check1) {
-					(*currRGBDistThreshold) += (*currRGBDynamicRate)*0.01f;
-					(*currLCDPDistThreshold) += (*currLCDPDynamicRate)*0.01f;
+					(*currDistThreshold) += (*currDynamicRate)*0.01f;
 				}
 				else {
-					(*currRGBDistThreshold) = std::max(1.0f, (*currRGBDistThreshold) - (0.01f/ (*currRGBDynamicRate)));
-					(*currLCDPDistThreshold) = std::max(1.0f, (*currLCDPDistThreshold) - (0.01f / (*currLCDPDynamicRate)));
+					(*currDistThreshold) = std::max(1.0f, (*currDistThreshold) - (0.01f / (*currDynamicRate)));
 				}
+				// Top BG word
+				bgWord = (bgWordPtr + currModelIndex);
+				GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
+				(*currPersistenceThreshold) = currWordPersistence / ((*currDistThreshold) * 2);
 			}
 		}
 	}
@@ -829,14 +767,14 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
 
 		cv::Mat gradientResult, gradientResult2;
-		
+
 		cv::inRange(grad, cv::Scalar(75), cv::Scalar(110), gradientResult);
-		cv::bitwise_not(resDarkPixel, gradientResult2);
+		//cv::bitwise_not(resDarkPixel, gradientResult2);
 		cv::bitwise_and(gradientResult, gradientResult2, gradientResult);
 
 		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
 		cv::bitwise_not(gradientResult, gradientResult);
-		
+
 		cv::inRange(grad, cv::Scalar(75), cv::Scalar(150), gradientResult2);
 		cv::dilate(gradientResult2, gradientResult2, cv::Mat(), cv::Point(-1, -1), 4);
 		//inputGrayImg.copyTo(gradientResult);
@@ -860,11 +798,11 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::dilate(resCurrFGMask, resCurrFGMask, cv::Mat(), cv::Point(-1, -1), 1);
 		//cv::bitwise_and(resCurrFGMask, gradientResult, tempCurrFGMask);
 		cv::bitwise_and(resCurrFGMask, gradientResult2, tempCurrFGMask);
-		cv::erode(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
-		cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
-		cv::medianBlur(resDarkPixel, resDarkPixel, 3);
+		//cv::erode(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
+		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
+		//cv::medianBlur(resDarkPixel, resDarkPixel, 3);
 		//cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult);
-		cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult2);
+		//cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult2);
 		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_CLOSE, element);
 		cv::morphologyEx(gradientResult2, gradientResult2, cv::MORPH_CLOSE, element);
 		//cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
@@ -879,13 +817,13 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		//cv::bitwise_and(reconstructLine, resFGMaskFloodedHoles, resFGMaskFloodedHoles);
 		cv::bitwise_or(resCurrFGMask, resFGMaskFloodedHoles, resCurrFGMask);
 		cv::bitwise_or(resCurrFGMask, postCompensationResult, resLastFGMask);
-		
-		
+
+
 		//cv::bitwise_and(gradientResult, resLastFGMask, resLastFGMask);
 		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
 		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
 		//cv::dilate(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
-		
+
 		resLastFGMask = ContourFill(resLastFGMask);
 		resLastFGMask.copyTo(resCurrFGMask);
 		resT_1FGMask.copyTo(resT_2FGMask);
@@ -894,16 +832,12 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	resCurrFGMask.copyTo(outputImg);
 	// Frame Index
 	frameIndex++;
-	// Reset minimum descriptor matched distance
+	// Reset minimum matching distance
 	resMinLCDPDistance = cv::Scalar(1.0f);
 	resMinRGBDistance = cv::Scalar(1.0f);
-	// Reset FG mask to initial state
+	resTotalPersistence = cv::Scalar(0.0f);
 	resCurrFGMask = cv::Scalar_<uchar>::all(0);
-	resCurrUpLCDPFGMask = cv::Scalar_<uchar>::all(0);
-	resCurrUpRGBFGMask = cv::Scalar_<uchar>::all(0);
-	resCurrLCDPFGMask = cv::Scalar_<uchar>::all(0);
-	resCurrRGBFGMask = cv::Scalar_<uchar>::all(0);	
-
+	resLastGrayImg = (inputGrayImg + (resLastGrayImg*(frameIndex - 1))) / frameIndex;
 }
 
 /*=====METHODS=====*/
@@ -947,12 +881,17 @@ void BackgroundSubtractorLCDP::RefreshModel(float refreshFraction)
 void BackgroundSubtractorLCDP::DescriptorGenerator(const cv::Mat inputFrame, const PxInfo &pxInfoPtr,
 	DescriptorStruct &wordPtr)
 {
+	// Debug usage
+	float gray = 0.0f;
 	wordPtr.frameCount = 1;
 	for (int channel = 0; channel < 3; channel++) {
 		wordPtr.rgb[channel] = inputFrame.data[pxInfoPtr.bgrDataIndex + channel];
+		gray += inputFrame.data[pxInfoPtr.bgrDataIndex + channel];
 	}
+	gray = gray / 3.0f;
 	wordPtr.p = frameIndex;
 	wordPtr.q = frameIndex;
+	wordPtr.gray = gray;
 	wordPtr.lastF = frameIndex;
 	wordPtr.nowF = frameIndex;
 	LCDGenerator(inputFrame, pxInfoPtr, wordPtr);
@@ -965,7 +904,7 @@ void BackgroundSubtractorLCDP::LCDGenerator(const cv::Mat inputFrame, const PxIn
 	int G_CURR = inputFrame.data[pxInfoPtr.bgrDataIndex + 1];
 	int R_CURR = inputFrame.data[pxInfoPtr.bgrDataIndex + 2];
 
-	// Define Neighbor differences variables
+	// Define neighbor differences variables
 	int R_NB, G_NB, B_NB;
 	double ratioBNB_GCURR_MIN, ratioBNB_RCURR_MIN, ratioGNB_BCURR_MIN, ratioGNB_RCURR_MIN, ratioRNB_BCURR_MIN, ratioRNB_GCURR_MIN,
 		ratioBNB_GCURR_MAX, ratioBNB_RCURR_MAX, ratioGNB_BCURR_MAX, ratioGNB_RCURR_MAX, ratioRNB_BCURR_MAX, ratioRNB_GCURR_MAX,
@@ -1008,45 +947,45 @@ void BackgroundSubtractorLCDP::LCDGenerator(const cv::Mat inputFrame, const PxIn
 	//	ratioRNB_RCURR_MAX = std::min(255.0, ratioRNB_RCURR);
 	//}
 	//else if (descRatioCalculationMethod) {
-		// New ratio calculation method
-		double ratioBNB_GCURR = std::max(3.0, abs(double(descColourDiffRatio*(B_CURR - G_CURR))));
-		double ratioBNB_RCURR = std::max(3.0, abs(double(descColourDiffRatio*(B_CURR - R_CURR))));
-		double ratioGNB_BCURR = std::max(3.0, abs(double(descColourDiffRatio*(G_CURR - B_CURR))));
-		double ratioGNB_RCURR = std::max(3.0, abs(double(descColourDiffRatio*(G_CURR - R_CURR))));
-		double ratioRNB_BCURR = std::max(3.0, abs(double(descColourDiffRatio*(R_CURR - B_CURR))));
-		double ratioRNB_GCURR = std::max(3.0, abs(double(descColourDiffRatio*(R_CURR - G_CURR))));
+	// New ratio calculation method
+	double ratioBNB_GCURR = std::max(3.0, abs(double(descColourDiffRatio*(B_CURR - G_CURR))));
+	double ratioBNB_RCURR = std::max(3.0, abs(double(descColourDiffRatio*(B_CURR - R_CURR))));
+	double ratioGNB_BCURR = std::max(3.0, abs(double(descColourDiffRatio*(G_CURR - B_CURR))));
+	double ratioGNB_RCURR = std::max(3.0, abs(double(descColourDiffRatio*(G_CURR - R_CURR))));
+	double ratioRNB_BCURR = std::max(3.0, abs(double(descColourDiffRatio*(R_CURR - B_CURR))));
+	double ratioRNB_GCURR = std::max(3.0, abs(double(descColourDiffRatio*(R_CURR - G_CURR))));
 
-		ratioBNB_GCURR_MIN = std::max(-255.0, std::min((B_CURR - G_CURR) - ratioBNB_GCURR, (B_CURR - G_CURR) + ratioBNB_GCURR));
-		ratioBNB_RCURR_MIN = std::max(-255.0, std::min((B_CURR - R_CURR) - ratioBNB_RCURR, (B_CURR - R_CURR) + ratioBNB_RCURR));
-		ratioGNB_BCURR_MIN = std::max(-255.0, std::min((G_CURR - B_CURR) - ratioGNB_BCURR, (G_CURR - B_CURR) + ratioGNB_BCURR));
-		ratioGNB_RCURR_MIN = std::max(-255.0, std::min((G_CURR - R_CURR) - ratioGNB_RCURR, (G_CURR - R_CURR) + ratioGNB_RCURR));
-		ratioRNB_BCURR_MIN = std::max(-255.0, std::min((R_CURR - B_CURR) - ratioRNB_BCURR, (R_CURR - B_CURR) + ratioRNB_BCURR));
-		ratioRNB_GCURR_MIN = std::max(-255.0, std::min((R_CURR - G_CURR) - ratioRNB_GCURR, (R_CURR - G_CURR) + ratioRNB_GCURR));
+	ratioBNB_GCURR_MIN = std::max(-255.0, std::min((B_CURR - G_CURR) - ratioBNB_GCURR, (B_CURR - G_CURR) + ratioBNB_GCURR));
+	ratioBNB_RCURR_MIN = std::max(-255.0, std::min((B_CURR - R_CURR) - ratioBNB_RCURR, (B_CURR - R_CURR) + ratioBNB_RCURR));
+	ratioGNB_BCURR_MIN = std::max(-255.0, std::min((G_CURR - B_CURR) - ratioGNB_BCURR, (G_CURR - B_CURR) + ratioGNB_BCURR));
+	ratioGNB_RCURR_MIN = std::max(-255.0, std::min((G_CURR - R_CURR) - ratioGNB_RCURR, (G_CURR - R_CURR) + ratioGNB_RCURR));
+	ratioRNB_BCURR_MIN = std::max(-255.0, std::min((R_CURR - B_CURR) - ratioRNB_BCURR, (R_CURR - B_CURR) + ratioRNB_BCURR));
+	ratioRNB_GCURR_MIN = std::max(-255.0, std::min((R_CURR - G_CURR) - ratioRNB_GCURR, (R_CURR - G_CURR) + ratioRNB_GCURR));
 
-		ratioBNB_GCURR_MAX = std::min(255.0, std::max((B_CURR - G_CURR) - ratioBNB_GCURR, (B_CURR - G_CURR) + ratioBNB_GCURR));
-		ratioBNB_RCURR_MAX = std::min(255.0, std::max((B_CURR - R_CURR) - ratioBNB_RCURR, (B_CURR - R_CURR) + ratioBNB_RCURR));
-		ratioGNB_BCURR_MAX = std::min(255.0, std::max((G_CURR - B_CURR) - ratioGNB_BCURR, (G_CURR - B_CURR) + ratioGNB_BCURR));
-		ratioGNB_RCURR_MAX = std::min(255.0, std::max((G_CURR - R_CURR) - ratioGNB_RCURR, (G_CURR - R_CURR) + ratioGNB_RCURR));
-		ratioRNB_BCURR_MAX = std::min(255.0, std::max((R_CURR - B_CURR) - ratioRNB_BCURR, (R_CURR - B_CURR) + ratioRNB_BCURR));
-		ratioRNB_GCURR_MAX = std::min(255.0, std::max((R_CURR - G_CURR) - ratioRNB_GCURR, (R_CURR - G_CURR) + ratioRNB_GCURR));
+	ratioBNB_GCURR_MAX = std::min(255.0, std::max((B_CURR - G_CURR) - ratioBNB_GCURR, (B_CURR - G_CURR) + ratioBNB_GCURR));
+	ratioBNB_RCURR_MAX = std::min(255.0, std::max((B_CURR - R_CURR) - ratioBNB_RCURR, (B_CURR - R_CURR) + ratioBNB_RCURR));
+	ratioGNB_BCURR_MAX = std::min(255.0, std::max((G_CURR - B_CURR) - ratioGNB_BCURR, (G_CURR - B_CURR) + ratioGNB_BCURR));
+	ratioGNB_RCURR_MAX = std::min(255.0, std::max((G_CURR - R_CURR) - ratioGNB_RCURR, (G_CURR - R_CURR) + ratioGNB_RCURR));
+	ratioRNB_BCURR_MAX = std::min(255.0, std::max((R_CURR - B_CURR) - ratioRNB_BCURR, (R_CURR - B_CURR) + ratioRNB_BCURR));
+	ratioRNB_GCURR_MAX = std::min(255.0, std::max((R_CURR - G_CURR) - ratioRNB_GCURR, (R_CURR - G_CURR) + ratioRNB_GCURR));
 
-		double ratioBNB_BCURR = std::max(3.0, double(descColourDiffRatio*B_CURR));
-		double ratioGNB_GCURR = std::max(3.0, double(descColourDiffRatio*G_CURR));
-		double ratioRNB_RCURR = std::max(3.0, double(descColourDiffRatio*R_CURR));
+	double ratioBNB_BCURR = std::max(3.0, double(descColourDiffRatio*B_CURR));
+	double ratioGNB_GCURR = std::max(3.0, double(descColourDiffRatio*G_CURR));
+	double ratioRNB_RCURR = std::max(3.0, double(descColourDiffRatio*R_CURR));
 
-		ratioBNB_BCURR_MIN = std::max(-255.0, -ratioBNB_BCURR);
-		ratioGNB_GCURR_MIN = std::max(-255.0, -ratioGNB_GCURR);
-		ratioRNB_RCURR_MIN = std::max(-255.0, -ratioRNB_RCURR);
+	ratioBNB_BCURR_MIN = std::max(-255.0, -ratioBNB_BCURR);
+	ratioGNB_GCURR_MIN = std::max(-255.0, -ratioGNB_GCURR);
+	ratioRNB_RCURR_MIN = std::max(-255.0, -ratioRNB_RCURR);
 
-		ratioBNB_BCURR_MAX = std::min(255.0, ratioBNB_BCURR);
-		ratioGNB_GCURR_MAX = std::min(255.0, ratioGNB_GCURR);
-		ratioRNB_RCURR_MAX = std::min(255.0, ratioRNB_RCURR);
+	ratioBNB_BCURR_MAX = std::min(255.0, ratioBNB_BCURR);
+	ratioGNB_GCURR_MAX = std::min(255.0, ratioGNB_GCURR);
+	ratioRNB_RCURR_MAX = std::min(255.0, ratioRNB_RCURR);
 	//}
 
 	double tempBNB_GCURR, tempBNB_RCURR, tempGNB_BCURR, tempGNB_RCURR, tempRNB_BCURR, tempRNB_GCURR, tempBNB_BCURR,
 		tempGNB_GCURR, tempRNB_RCURR;
 
-	for(int nbPixelIndex = 0; nbPixelIndex < descNbNo; nbPixelIndex++) {
+	for (int nbPixelIndex = 0; nbPixelIndex < descNbNo; nbPixelIndex++) {
 		// Obtain neighborhood pixel's value
 		B_NB = inputFrame.data[pxInfoPtr.nbIndex[nbPixelIndex].bgrDataIndex];
 		G_NB = inputFrame.data[pxInfoPtr.nbIndex[nbPixelIndex].bgrDataIndex + 1];
@@ -1119,12 +1058,12 @@ void BackgroundSubtractorLCDP::GenerateLCDDiffLUT() {
 	float countColour = 0;
 	float countTexture = 0;
 	int tempDiffIndex;
-	for (int diffIndex = 0; diffIndex < descPatternLength; diffIndex++) {		
+	for (int diffIndex = 0; diffIndex < descPatternLength; diffIndex++) {
 		countColour = 0;
 		countTexture = 0;
 		tempDiffIndex = diffIndex;
 		// Checking bit by bit 
-		// Color variation
+		// color variation
 		for (size_t bitIndex = 0; bitIndex < 6; bitIndex++) {
 			// The second bit is 1 - 11/01
 			if ((tempDiffIndex & 1) == 1) {
@@ -1169,47 +1108,55 @@ void BackgroundSubtractorLCDP::GenerateLCDDiffLUT() {
 	}
 }
 
-/*=====MATCHING Methods=====*/
-// Descriptor matching (RETURN: LCDPResult-1:Not match, 0: Match)
+/*=====MATCHING Methods=====*/ // Edited on 14 May 2017
+// Descriptor matching (RETURN: matchResult-1:Not match, 0: Match)
 void BackgroundSubtractorLCDP::DescriptorMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord
-	, const size_t &descNeighNo, const double LCDPThreshold, const double upLCDPThreshold, const double RGBThreshold, const double upRGBThreshold,
-	float &LCDPDistance, float &RGBDistance, bool &LCDPResult, bool &upLCDPResult, bool &RGBResult, bool &upRGBResult)
+	, const size_t &descNeighNo, const double LCDPThreshold, const double upLCDPThreshold, const double RGBThreshold,
+	float &LCDPDistance, float &RGBDistance, bool &matchResult)
 {
+
 	// Match LCD descriptor
 	if (clsLCDPDiffSwitch) {
 		// LCD Matching (RETURN: LCDPResult-1:Not match, 0: Match)
-		LCDPMatching(bgWord, currWord, descNeighNo, LCDPThreshold, LCDPDistance, LCDPResult);
-
-		// If previous results is not match, matching again with more larger threshold to indicate the pixel exactly belong to FG
-		if (LCDPResult) {
-			upLCDPResult = (LCDPDistance > upLCDPThreshold) ? true : false;
-		}
+		LCDPMatching(bgWord, currWord, descNeighNo, LCDPThreshold, LCDPDistance, matchResult);
 	}
 	// Match RGB descriptor
 	if (clsRGBDiffSwitch) {
+		bool RGBResult = false;
 		// RGB Matching (RETURN: RGBResult-1:Not match, 0: Match)
 		RGBMatching(bgWord, currWord, RGBThreshold, RGBDistance, RGBResult);
-		// If previous results is not match, matching again with more larger threshold to indicate the pixel exactly belong to FG
-		if (RGBResult) {
-			upRGBResult = (RGBDistance > upRGBThreshold) ? true : false;
+		
+		// LCDP BG and RGB FG
+		if (!matchResult == RGBResult) {
+			bool darkResult = false;
+			// Check dark pixel (RETURN-1:Not Dark Pixel, 0: Dark Pixel)
+			RGBDarkPixel(bgWord, currWord, darkResult);
+			// If dark pixel, then it classify as shadow pixel
+			matchResult = (darkResult) ? true : false;
+		}
+		// LCDP FG and RGB BG
+		else if (matchResult == !RGBResult) {
+			// If previous results is not match, matching again with more larger threshold to indicate the pixel exactly belong to FG
+			matchResult = (LCDPDistance > upLCDPThreshold) ? true : false;
 		}
 	}
 }
 // LCD Matching (RETURN-1:Not match, 0: Match)
 void BackgroundSubtractorLCDP::LCDPMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord,
-	const size_t &descNeighNo, const double &LCDPThreshold, float &minDistance, bool &result) {
+	const size_t &descNeighNo, const double &LCDPThreshold, float &minDistance, bool &matchResult) {
 	float tempDistance = 0.0f;
 	for (size_t neighbourIndex = 0; neighbourIndex < descNeighNo; neighbourIndex++) {
 		// Calculate the total number of bit that are different
 		tempDistance += LCDDiffLUTPtr[std::abs(bgWord.LCDP[neighbourIndex] - currWord.LCDP[neighbourIndex])];
 	}
 	minDistance = tempDistance / descNeighNo;
-	result = (minDistance > LCDPThreshold) ? true : false;
+	matchResult = (minDistance > LCDPThreshold) ? true : false;
 }
-// RGB Matching (RETURN-1:Not match, 0: Match)
+// RGB Matching (RETURN-1:Not match, 0: Match) Checked May 14
 void BackgroundSubtractorLCDP::RGBMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord,
-	const double &RGBThreshold, float &minDistance, bool &result)
+	const double &RGBThreshold, float &minDistance, bool &matchResult)
 {
+	matchResult = false;
 	// Maximum of color differences
 	uint distance = 255;
 	uint tempDistance = 0;
@@ -1218,27 +1165,46 @@ void BackgroundSubtractorLCDP::RGBMatching(DescriptorStruct &bgWord, DescriptorS
 		// Update minimum distance
 		distance = tempDistance < distance ? tempDistance : distance;
 		if (tempDistance > RGBThreshold) {
-			result = true;
+			// return as foreground pixel
+			matchResult = true;
 			break;
 		}
 	}
 	minDistance = distance / 255;
 }
+// RGB Dark Pixel (RETURN-1:Not Dark Pixel, 0: Dark Pixel) Checked May 14
+void BackgroundSubtractorLCDP::RGBDarkPixel(DescriptorStruct &bgWord, DescriptorStruct &currWord,bool &result)
+{
+	double IntensityRatio, totalCurrIntensityValue=0.0, totalBgIntensityValue = 0.0, currIntensityValue, bgIntensityValue, currRValue, bgRValue,
+		currGValue, bgGValue, RDiff, GDiff;
+	result = false;
+	for (int channel = 0; channel < 3; channel++) {
+		totalCurrIntensityValue += currWord.rgb[channel];
+		totalBgIntensityValue += bgWord.rgb[channel];		
+	}
+	currIntensityValue = totalCurrIntensityValue / 3.0;
+	bgIntensityValue = totalBgIntensityValue / 3.0;
+	IntensityRatio = (currIntensityValue / bgIntensityValue);
+	//if ((IntensityRatio <0.8) && (IntensityRatio > 0.25)) {
+	if ((IntensityRatio < darkMaxIntensityRatio) && (IntensityRatio > darkMinIntensityRatio)) {
+		bgRValue = double(bgWord.rgb[2] / totalBgIntensityValue);
+		currRValue = double(currWord.rgb[2] / totalCurrIntensityValue);
+		bgGValue = double(bgWord.rgb[1] / totalBgIntensityValue);
+		currGValue = double(currWord.rgb[1] / totalCurrIntensityValue);
+		RDiff = std::abs(bgRValue - currRValue);
+		GDiff = std::abs(bgGValue - currGValue);
+		if ((RDiff < darkRDiffRatio) && (GDiff < darkGDiffRatio)) {
+		//if ((RDiff < 0.15) && (GDiff < 0.1)) {
+			result = true;
+		}
+	}
+}
 // Dark Pixel generator (RETURN-255: Not dark pixel, 0: dark pixel)
 void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, const cv::Mat &inputRGBImg,
 	const cv::Mat &lastGrayImg, const cv::Mat &lastRGBImg, cv::Mat &darkPixel) {
 	darkPixel = cv::Scalar_<uchar>::all(255);
-	//cv::Mat debugMat;
-	//cv::Mat debugMatG;
-	//cv::Mat debugMatGy;
-	//debugMat.create(frameSize, CV_32FC1);
-	//debugMat = cv::Scalar(0.0f);
-	//debugMatG.create(frameSize, CV_32FC1);
-	//debugMatG = cv::Scalar(0.0f);
-	//debugMatGy.create(frameSize, CV_32FC1);
-	//debugMatGy = cv::Scalar(0.0f);
 	// Store the pixel's intensity values
-	static double IntensityRatio,totalCurrIntensityValue,totalLastIntensityValue, currIntensityValue, lastIntensityValue, currRValue, lastRValue, currGValue, lastGValue, RDiff, GDiff;
+	static double IntensityRatio, totalCurrIntensityValue, totalLastIntensityValue, currIntensityValue, lastIntensityValue, currRValue, lastRValue, currGValue, lastGValue, RDiff, GDiff;
 
 	for (size_t pxPointer = 0; pxPointer < frameInitTotalPixel; ++pxPointer) {
 		totalCurrIntensityValue = double(inputRGBImg.data[(pxPointer * 3)] + inputRGBImg.data[(pxPointer * 3) + 1] + inputRGBImg.data[(pxPointer * 3) + 2]);
@@ -1248,14 +1214,14 @@ void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, c
 
 		IntensityRatio = (currIntensityValue / lastIntensityValue);
 
-		if ((IntensityRatio <0.8) && (IntensityRatio > 0.25)) {
+		if ((IntensityRatio < darkMaxIntensityRatio) && (IntensityRatio > darkMinIntensityRatio)) {
 			lastRValue = double(lastRGBImg.data[(pxPointer * 3) + 2]) / totalLastIntensityValue;
 			currRValue = double(inputRGBImg.data[(pxPointer * 3) + 2]) / totalCurrIntensityValue;
 			lastGValue = double(lastRGBImg.data[(pxPointer * 3) + 1]) / totalLastIntensityValue;
 			currGValue = double(inputRGBImg.data[(pxPointer * 3) + 1]) / totalCurrIntensityValue;
 			RDiff = std::abs(lastRValue - currRValue);
 			GDiff = std::abs(lastGValue - currGValue);
-			if ((RDiff < 0.15) && (GDiff < 0.1)) {
+			if ((RDiff < darkRDiffRatio) && (GDiff < darkGDiffRatio)) {
 				darkPixel.data[pxPointer] = 0;
 			}
 		}
@@ -1450,9 +1416,9 @@ void BackgroundSubtractorLCDP::SaveParameter(std::string versionFolderName, std:
 	myfile << upDynamicRateIncrease;
 	myfile << "\nSegmentation noise accumulator decrease value:";
 	myfile << upDynamicRateDecrease;
-	myfile << "\nLocal update rate change factor (Decrement):";
+	myfile << "\nLocal update rate change factor (Desc):";
 	myfile << upUpdateRateDecrease;
-	myfile << "\nLocal update rate change factor (Increment):";
+	myfile << "\nLocal update rate change factor (Inc.):";
 	myfile << upUpdateRateIncrease;
 	myfile << "\nLocal update rate (Lower):";
 	myfile << upLearningRateLowerCap;

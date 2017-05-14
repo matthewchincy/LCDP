@@ -127,7 +127,7 @@ int main() {
 	float darkGDiffRatio = 0.1;
 
 	/*=====POST PROCESS Parameters=====*/
-	bool PostSwitch = false;
+	bool PostSwitch = true;
 
 	std::string versionFolderName;
 	std::string saveFolderName;
@@ -137,7 +137,7 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 0; datasetIndex <1; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex < 11; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
@@ -179,7 +179,7 @@ int main() {
 		myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
 		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
 		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Random Replace Switch, Random Update Switch,";
-		myfile << "Feedback Switch,V Inc, V Desc, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
+		myfile << "Feedback Switch,V Inc, V Desc,V Min, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
 		myfile.close();
 
 		ROI_FRAME.create(FRAME_SIZE, CV_8UC1);

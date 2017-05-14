@@ -226,6 +226,8 @@ protected:
 	cv::Mat resT_1FGMask;
 	// t-2 foreground mask
 	cv::Mat resT_2FGMask;
+	// Dark pixel result
+	cv::Mat resDarkPixel;
 	// Flooded holes foreground mask
 	cv::Mat resFGMaskFloodedHoles;
 	// Pre flooded holes foreground mask

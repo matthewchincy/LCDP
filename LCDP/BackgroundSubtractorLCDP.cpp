@@ -225,6 +225,9 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	resCurrFGMask.create(frameSize, CV_8UC1);
 	resCurrFGMask = cv::Scalar_<uchar>::all(0);
 
+	// Dark Pixel
+	resDarkPixel.create(frameSize, CV_8UC1);
+	resDarkPixel = cv::Scalar_<uchar>::all(0);
 	// Previous foreground mask
 	resLastFGMask.create(frameSize, CV_8UC1);
 	resLastFGMask = cv::Scalar_<uchar>::all(0);
@@ -289,6 +292,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	}
 
 	// DETECTION PROCESS
+	// Generate a map to indicate dark pixel (255: Not dark pixel, 0: Dark pixel)
+	DarkPixelGenerator(inputGrayImg, inputImg, resLastGrayImg, resLastImg, resDarkPixel);
 	// BG Word pointer
 	DescriptorStruct * bgWord = nullptr;
 	// Current bg word's persistence	
@@ -307,6 +312,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			// Model index for current pixel
 			const size_t currModelIndex = pxInfoLUTPtr[pxPointer].modelIndex;
 
+			// Current dark pixel result
+			uchar * currDarkPixel = (resDarkPixel.data + pxPointer);
 			// LCDP differences threshold
 			const double currLCDPThreshold = std::min(clsLCDPMaxThreshold, std::max(clsLCDPThreshold, (std::pow(2, double((*currDistThreshold))) / 512)));
 			// Up LCDP differences threshold
@@ -519,6 +526,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			// Successful classified as BG Pixels
 			if (clsPotentialMatch >= clsMatchThreshold) {
 				(*currFGMask) = 0;
+				(*currDarkPixel) = 0;
 				(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
 			}
 			// Classified as FG Pixels
@@ -589,6 +597,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 						}
 						if (clsNBPotentialMatch >= clsNBMatchThreshold) {
 							(*currFGMask) = 0;
+							(*currDarkPixel) = 0;
 							(*currDynamicRate) += upDynamicRateIncrease;
 							break;
 						}
@@ -770,7 +779,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 
 		cv::inRange(grad, cv::Scalar(75), cv::Scalar(110), gradientResult);
 		//cv::bitwise_not(resDarkPixel, gradientResult2);
-		cv::bitwise_and(gradientResult, gradientResult2, gradientResult);
+		//cv::bitwise_and(gradientResult, gradientResult2, gradientResult);
 
 		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
 		cv::bitwise_not(gradientResult, gradientResult);
@@ -798,11 +807,11 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::dilate(resCurrFGMask, resCurrFGMask, cv::Mat(), cv::Point(-1, -1), 1);
 		//cv::bitwise_and(resCurrFGMask, gradientResult, tempCurrFGMask);
 		cv::bitwise_and(resCurrFGMask, gradientResult2, tempCurrFGMask);
-		//cv::erode(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
-		//cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
-		//cv::medianBlur(resDarkPixel, resDarkPixel, 3);
+		cv::erode(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::dilate(resDarkPixel, resDarkPixel, cv::Mat(), cv::Point(-1, -1), 2);
+		cv::medianBlur(resDarkPixel, resDarkPixel, 3);
 		//cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult);
-		//cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult2);
+		cv::bitwise_or(tempCurrFGMask, resDarkPixel, gradientResult2);
 		//cv::morphologyEx(gradientResult, gradientResult, cv::MORPH_CLOSE, element);
 		cv::morphologyEx(gradientResult2, gradientResult2, cv::MORPH_CLOSE, element);
 		//cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
@@ -1177,7 +1186,7 @@ void BackgroundSubtractorLCDP::RGBDarkPixel(DescriptorStruct &bgWord, Descriptor
 {
 	double IntensityRatio, totalCurrIntensityValue=0.0, totalBgIntensityValue = 0.0, currIntensityValue, bgIntensityValue, currRValue, bgRValue,
 		currGValue, bgGValue, RDiff, GDiff;
-	result = false;
+	result = true;
 	for (int channel = 0; channel < 3; channel++) {
 		totalCurrIntensityValue += currWord.rgb[channel];
 		totalBgIntensityValue += bgWord.rgb[channel];		
@@ -1195,7 +1204,7 @@ void BackgroundSubtractorLCDP::RGBDarkPixel(DescriptorStruct &bgWord, Descriptor
 		GDiff = std::abs(bgGValue - currGValue);
 		if ((RDiff < darkRDiffRatio) && (GDiff < darkGDiffRatio)) {
 		//if ((RDiff < 0.15) && (GDiff < 0.1)) {
-			result = true;
+			result = false;
 		}
 	}
 }
@@ -1412,10 +1421,12 @@ void BackgroundSubtractorLCDP::SaveParameter(std::string versionFolderName, std:
 	myfile << "\nFeedback loop switch:";
 	myfile << upFeedbackSwitch;
 	myfile << "\nInitial commonValue, R:";
-	myfile << "\nSegmentation noise accumulator increase value:";
+	myfile << "\nDynamic rate increase value:";
 	myfile << upDynamicRateIncrease;
-	myfile << "\nSegmentation noise accumulator decrease value:";
+	myfile << "\nDynamic rate decrease value:";
 	myfile << upDynamicRateDecrease;
+	myfile << "\nDynamic rate minimum value:";
+	myfile << upMinDynamicRate;
 	myfile << "\nLocal update rate change factor (Desc):";
 	myfile << upUpdateRateDecrease;
 	myfile << "\nLocal update rate change factor (Inc.):";
@@ -1439,7 +1450,7 @@ void BackgroundSubtractorLCDP::SaveParameter(std::string versionFolderName, std:
 	myfile << clsNbMatchSwitch << "," << upRandomReplaceSwitch;
 	myfile << "," << upRandomUpdateNbSwitch;
 	myfile << "," << upFeedbackSwitch;
-	myfile << "," << upDynamicRateIncrease << "," << upDynamicRateDecrease << "," << upUpdateRateIncrease;
+	myfile << "," << upDynamicRateIncrease << "," << upDynamicRateDecrease << "," << upMinDynamicRate << "," << upUpdateRateIncrease;
 	myfile << "," << upUpdateRateDecrease << "," << upLearningRateLowerCap << "," << upLearningRateUpperCap;
 	myfile << "," << WORDS_NO;
 	myfile.close();

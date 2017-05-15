@@ -342,76 +342,111 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			float currLastWordPersistence = FLT_MAX;
 			// Current pixel's background word index
 			int currLocalWordIdx = 0;
-			//if (pxPointer == 79948) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/79948.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		float tempDebugDistance = 1.0f;
-			//		bool DebugLCDPResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
-			//		myfile << tempDebugDistance << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 79288) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/79288.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		float tempDebugDistance = 1.0f;
-			//		bool DebugLCDPResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
-			//		myfile << tempDebugDistance << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 77835) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/77835.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		float tempDebugDistance = 1.0f;
-			//		bool DebugLCDPResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
-			//		myfile << tempDebugDistance << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 16909) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/16909.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		float tempDebugDistance = 1.0f;
-			//		bool DebugLCDPResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
-			//		myfile << tempDebugDistance << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 29931) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/29931.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		float tempDebugDistance = 1.0f;
-			//		bool DebugLCDPResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugLCDPResult);
-			//		myfile << tempDebugDistance << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
+			if (pxPointer == 44815) {
+				std::ofstream myfile;
+				myfile.open(folderName + "/x15y140.csv", std::ios::app);
+				myfile << frameIndex << ","<<(*currDistThreshold)<<","<<(*currDynamicRate)<<","<<(*currUpdateRate)<<",";
+				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+					bgWord = (bgWordPtr + currModelIndex + wordNo);
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+					myfile <<"L-"<< tempDebugDistance << "," << DebugResult << ",";
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+					myfile <<"R-"<< tempDebugDistance << "," << DebugResult << ",";
+					bool DebugResult = false;
+					RGBDarkPixel(*bgWord, currWord, DebugResult);
+					myfile << "D-" << DebugResult << ",";
+				}
+				myfile << "\n";
+				myfile.close();
+			}
+			if (pxPointer == 484) {
+				std::ofstream myfile;
+				myfile.open(folderName + "/x126y38.csv", std::ios::app);
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+					bgWord = (bgWordPtr + currModelIndex + wordNo);
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+					bool DebugResult = false;
+					RGBDarkPixel(*bgWord, currWord, DebugResult);
+					myfile << "D-" << DebugResult << ",";
+				}
+				myfile << "\n";
+				myfile.close();
+			}
+			if (pxPointer == 44990) {
+				std::ofstream myfile;
+				myfile.open(folderName + "/x190y140.csv", std::ios::app);
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+					bgWord = (bgWordPtr + currModelIndex + wordNo);
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+					bool DebugResult = false;
+					RGBDarkPixel(*bgWord, currWord, DebugResult);
+					myfile << "D-" << DebugResult << ",";
+				}
+				myfile << "\n";
+				myfile.close();
+			}
+			if (pxPointer == 66362) {
+				std::ofstream myfile;
+				myfile.open(folderName + "/x122y207.csv", std::ios::app);
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+					bgWord = (bgWordPtr + currModelIndex + wordNo);
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+					bool DebugResult = false;
+					RGBDarkPixel(*bgWord, currWord, DebugResult);
+					myfile << "D-" << DebugResult << ",";
+				}
+				myfile << "\n";
+				myfile.close();
+			}
+			if (pxPointer == 63937) {
+				std::ofstream myfile;
+				myfile.open(folderName + "/x257y199.csv", std::ios::app);
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+					bgWord = (bgWordPtr + currModelIndex + wordNo);
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+					float tempDebugDistance = 1.0f;
+					bool DebugResult = false;
+					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+					bool DebugResult = false;
+					RGBDarkPixel(*bgWord, currWord, DebugResult);
+					myfile << "D-" << DebugResult << ",";
+				}
+				myfile << "\n";
+				myfile.close();
+			}
 			//if (pxPointer == 208964) {
 			//	std::ofstream myfile;
 			//	myfile.open(folderName + "/208964.csv", std::ios::app);

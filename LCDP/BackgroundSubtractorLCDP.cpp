@@ -346,17 +346,19 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				std::ofstream myfile;
 				myfile.open(folderName + "/x15y140.csv", std::ios::app);
 				myfile << frameIndex << ","<<(*currDistThreshold)<<","<<(*currDynamicRate)<<","<<(*currUpdateRate)<<",";
+				float tempDebugDistance = 1.0f;
+				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
 					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
 					myfile <<"L-"<< tempDebugDistance << "," << DebugResult << ",";
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
 					myfile <<"R-"<< tempDebugDistance << "," << DebugResult << ",";
-					bool DebugResult = false;
+					DebugResult = false;
 					RGBDarkPixel(*bgWord, currWord, DebugResult);
 					myfile << "D-" << DebugResult << ",";
 				}
@@ -367,17 +369,19 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				std::ofstream myfile;
 				myfile.open(folderName + "/x126y38.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				float tempDebugDistance = 1.0f;
+				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
 					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
 					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
 					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					bool DebugResult = false;
+					DebugResult = false;
 					RGBDarkPixel(*bgWord, currWord, DebugResult);
 					myfile << "D-" << DebugResult << ",";
 				}
@@ -388,17 +392,19 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				std::ofstream myfile;
 				myfile.open(folderName + "/x190y140.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				float tempDebugDistance = 1.0f;
+				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
 					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
 					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
 					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					bool DebugResult = false;
+					DebugResult = false;
 					RGBDarkPixel(*bgWord, currWord, DebugResult);
 					myfile << "D-" << DebugResult << ",";
 				}
@@ -409,17 +415,19 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				std::ofstream myfile;
 				myfile.open(folderName + "/x122y207.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				float tempDebugDistance = 1.0f;
+				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
 					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
 					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
 					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					bool DebugResult = false;
+					DebugResult = false;
 					RGBDarkPixel(*bgWord, currWord, DebugResult);
 					myfile << "D-" << DebugResult << ",";
 				}
@@ -430,17 +438,19 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				std::ofstream myfile;
 				myfile.open(folderName + "/x257y199.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				float tempDebugDistance = 1.0f;
+				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
 					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
 					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					float tempDebugDistance = 1.0f;
-					bool DebugResult = false;
+					tempDebugDistance = 1.0f;
+					DebugResult = false;
 					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
 					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					bool DebugResult = false;
+					DebugResult = false;
 					RGBDarkPixel(*bgWord, currWord, DebugResult);
 					myfile << "D-" << DebugResult << ",";
 				}

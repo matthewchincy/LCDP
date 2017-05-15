@@ -137,7 +137,7 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 2; datasetIndex < 3; datasetIndex++) {
+	for (size_t datasetIndex = 4; datasetIndex < 5; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";

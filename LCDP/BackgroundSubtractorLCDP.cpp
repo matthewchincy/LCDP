@@ -342,9 +342,9 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			float currLastWordPersistence = FLT_MAX;
 			// Current pixel's background word index
 			int currLocalWordIdx = 0;
-			if (pxPointer == 44815) {
+			if (pxPointer == 45459) {
 				std::ofstream myfile;
-				myfile.open(folderName + "/x15y140.csv", std::ios::app);
+				myfile.open(folderName + "/x99y126.csv", std::ios::app);
 				myfile << frameIndex << ","<<(*currDistThreshold)<<","<<(*currDynamicRate)<<","<<(*currUpdateRate)<<",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
@@ -365,9 +365,9 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				myfile << "\n";
 				myfile.close();
 			}
-			if (pxPointer == 484) {
+			if (pxPointer == 55126) {
 				std::ofstream myfile;
-				myfile.open(folderName + "/x126y38.csv", std::ios::app);
+				myfile.open(folderName + "/x46y153.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
@@ -388,9 +388,9 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				myfile << "\n";
 				myfile.close();
 			}
-			if (pxPointer == 44990) {
+			if (pxPointer == 38616) {
 				std::ofstream myfile;
-				myfile.open(folderName + "/x190y140.csv", std::ios::app);
+				myfile.open(folderName + "/x96y107.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
@@ -411,9 +411,9 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				myfile << "\n";
 				myfile.close();
 			}
-			if (pxPointer == 66362) {
+			if (pxPointer == 47415) {
 				std::ofstream myfile;
-				myfile.open(folderName + "/x122y207.csv", std::ios::app);
+				myfile.open(folderName + "/x255y131.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
@@ -434,9 +434,9 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				myfile << "\n";
 				myfile.close();
 			}
-			if (pxPointer == 63937) {
+			if (pxPointer == 54000) {
 				std::ofstream myfile;
-				myfile.open(folderName + "/x257y199.csv", std::ios::app);
+				myfile.open(folderName + "/x150y176.csv", std::ios::app);
 				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;

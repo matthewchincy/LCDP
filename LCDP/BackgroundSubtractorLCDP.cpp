@@ -1224,7 +1224,7 @@ void BackgroundSubtractorLCDP::RGBMatching(DescriptorStruct &bgWord, DescriptorS
 			break;
 		}
 	}
-	minDistance = distance / 255;
+	minDistance = float(distance) / 255.0f;
 }
 // RGB Dark Pixel (RETURN-1:Not Dark Pixel, 0: Dark Pixel) Checked May 14
 void BackgroundSubtractorLCDP::RGBDarkPixel(DescriptorStruct &bgWord, DescriptorStruct &currWord,bool &result)

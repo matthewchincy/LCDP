@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.0 Debug";
+	programVersion = "RL V1.5 ALL Test 3.1 Debug";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -100,13 +100,16 @@ int main() {
 	// Feedback V(x) Increment
 	//float DynamicRateIncrease[3] = { 0.5f,0.8f,1.0f };
 	//float upDynamicRateIncrease = 0.01f;
-	float upDynamicRateIncrease = 0.005f;
+	//float upDynamicRateIncrease = 0.005f;
+	float upDynamicRateIncrease = 1.0f;
+
 	// Feedback V(x) Decrement
 	//float DynamicRateDecrease[3] = { 0.4f,0.3f,0.1f };
 	//float upDynamicRateDecrease = 0.005f;
-	float upDynamicRateDecrease = 0.05f;
+	//float upDynamicRateDecrease = 0.05f;
+	float upDynamicRateDecrease = 0.1f;
 	// Minimum of Feedback V(x) value
-	float upMinDynamicRate = 0.3f;
+	float upMinDynamicRate = 0.0f;
 	// Feedback T(x) Increment
 	float upUpdateRateIncrease = 0.5f;
 	// Feedback T(x) Decrement
@@ -137,7 +140,7 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 4; datasetIndex < 5; datasetIndex++) {
+	for (size_t datasetIndex = 5; datasetIndex < 6; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
@@ -216,9 +219,22 @@ int main() {
 			SaveParameter(versionFolderName, saveFolderName);
 			backgroundSubtractorLCDP.folderName = saveFolderName;
 			backgroundSubtractorLCDP.SaveParameter(versionFolderName, saveFolderName);
+			resultFolderName = saveFolderName + "/v";
+			s2 = resultFolderName.c_str();
+			_mkdir(s2);
+			resultFolderName = saveFolderName + "/d";
+			s2 = resultFolderName.c_str();
+			_mkdir(s2);
+			resultFolderName = saveFolderName + "/r";
+			s2 = resultFolderName.c_str();
+			_mkdir(s2);
+			resultFolderName = saveFolderName + "/u";
+			s2 = resultFolderName.c_str();
+			_mkdir(s2);
 			resultFolderName = saveFolderName + "/results";
 			s2 = resultFolderName.c_str();
 			_mkdir(s2);
+
 		}
 
 		for (int currFrameIndex = 1; currFrameIndex <= FRAME_COUNT; currFrameIndex++) {

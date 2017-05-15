@@ -222,6 +222,8 @@ protected:
 	cv::Mat resCurrFGMask;
 	// Previous foreground mask
 	cv::Mat resLastFGMask;
+	// Previous raw foreground mask
+	cv::Mat resLastRawFGMask;
 	// t-1 foreground mask
 	cv::Mat resT_1FGMask;
 	// t-2 foreground mask
@@ -236,6 +238,16 @@ protected:
 	cv::Mat resLastImg;
 	// Last Grayscale image frame
 	cv::Mat resLastGrayImg;
+	// Last Raw Blinking frame
+	cv::Mat resLastRawBlink;
+	// Current Raw Blinking frame
+	cv::Mat resCurrRawBlink;
+	// Blink frame
+	cv::Mat resBlinkFrame;
+	// Last foreground mask dilated
+	cv::Mat resLastFGMaskDilated;
+	// Last foreground mask dilated inverted
+	cv::Mat resLastFGMaskDilatedInverted;
 
 	// RGB Dark Pixel Parameter
 	// Minimum Intensity Ratio

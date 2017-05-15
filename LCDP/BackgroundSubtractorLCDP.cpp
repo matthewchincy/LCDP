@@ -205,7 +205,7 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	resDistThreshold = cv::Scalar(1.0f);
 	// Per-pixel dynamic learning rate ('V(x)')
 	resDynamicRate.create(frameSize, CV_32FC1);
-	resDynamicRate = cv::Scalar(1.0f);
+	resDynamicRate = cv::Scalar(10.0f);
 	// Per-pixel update rates('T(x)')
 	resUpdateRate.create(frameSize, CV_32FC1);
 	resUpdateRate = cv::Scalar(upLearningRateLowerCap);
@@ -231,6 +231,18 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	// Previous foreground mask
 	resLastFGMask.create(frameSize, CV_8UC1);
 	resLastFGMask = cv::Scalar_<uchar>::all(0);
+	// Previous raw foreground mask
+	resLastRawFGMask.create(frameSize, CV_8UC1);
+	resLastRawFGMask = cv::Scalar_<uchar>::all(0);
+	// Last Raw Blinking frame
+	resLastRawBlink.create(frameSize, CV_8UC1);
+	resLastRawBlink = cv::Scalar_<uchar>::all(0);
+	// Current Raw Blinking frame
+	resCurrRawBlink.create(frameSize, CV_8UC1);
+	resCurrRawBlink = cv::Scalar_<uchar>::all(0);
+	// Blink frame
+	resBlinkFrame.create(frameSize, CV_8UC1);
+	resBlinkFrame = cv::Scalar_<uchar>::all(0);
 	// t-1 foreground mask
 	resT_1FGMask.create(frameSize, CV_8UC1);
 	resT_1FGMask = cv::Scalar_<uchar>::all(0);
@@ -244,6 +256,12 @@ void BackgroundSubtractorLCDP::Initialize(const cv::Mat inputFrame, cv::Mat inpu
 	// Pre flooded holes foreground mask
 	resFGMaskPreFlood.create(frameSize, CV_8UC1);
 	resFGMaskPreFlood = cv::Scalar_<uchar>::all(0);
+	// Last foreground mask dilated
+	resLastFGMaskDilated.create(frameSize, CV_8UC1);
+	resLastFGMaskDilated = cv::Scalar_<uchar>::all(0);
+	// Last foreground mask dilated inverted
+	resLastFGMaskDilatedInverted.create(frameSize, CV_8UC1);
+	resLastFGMaskDilatedInverted = cv::Scalar_<uchar>::all(0);
 
 	// Last frame image
 	inputFrame.copyTo(resLastImg);
@@ -290,7 +308,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	if (preSwitch) {
 		cv::GaussianBlur(inputImg, inputImg, preGaussianSize, 0, 0);
 	}
-
+	const bool bootstrapping = frameIndex <= 500;
 	// DETECTION PROCESS
 	// Generate a map to indicate dark pixel (255: Not dark pixel, 0: Dark pixel)
 	DarkPixelGenerator(inputGrayImg, inputImg, resLastGrayImg, resLastImg, resDarkPixel);
@@ -342,10 +360,10 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			float currLastWordPersistence = FLT_MAX;
 			// Current pixel's background word index
 			int currLocalWordIdx = 0;
-			if (pxPointer == 45459) {
+			/*if (pxPointer == 45459) {
 				std::ofstream myfile;
 				myfile.open(folderName + "/x99y126.csv", std::ios::app);
-				myfile << frameIndex << ","<<(*currDistThreshold)<<","<<(*currDynamicRate)<<","<<(*currUpdateRate)<<",";
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
@@ -353,11 +371,11 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					tempDebugDistance = 1.0f;
 					DebugResult = false;
 					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-					myfile <<"L-"<< tempDebugDistance << "," << DebugResult << ",";
+					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
 					tempDebugDistance = 1.0f;
 					DebugResult = false;
 					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-					myfile <<"R-"<< tempDebugDistance << "," << DebugResult << ",";
+					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
 					DebugResult = false;
 					RGBDarkPixel(*bgWord, currWord, DebugResult);
 					myfile << "D-" << DebugResult << ",";
@@ -368,7 +386,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			if (pxPointer == 55126) {
 				std::ofstream myfile;
 				myfile.open(folderName + "/x46y153.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
@@ -391,7 +409,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			if (pxPointer == 38616) {
 				std::ofstream myfile;
 				myfile.open(folderName + "/x96y107.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
@@ -414,7 +432,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			if (pxPointer == 47415) {
 				std::ofstream myfile;
 				myfile.open(folderName + "/x255y131.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
@@ -437,7 +455,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			if (pxPointer == 54000) {
 				std::ofstream myfile;
 				myfile.open(folderName + "/x150y176.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << ",";
+				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
 				float tempDebugDistance = 1.0f;
 				bool DebugResult = false;
 				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
@@ -456,7 +474,123 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				}
 				myfile << "\n";
 				myfile.close();
-			}
+			}*/
+			//// Canoe
+			//if (pxPointer == 44815) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/x15y140.csv", std::ios::app);
+			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
+			//	float tempDebugDistance = 1.0f;
+			//	bool DebugResult = false;
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+			//		DebugResult = false;
+			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
+			//		myfile << "D-" << DebugResult << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 484) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/x126y38.csv", std::ios::app);
+			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
+			//	float tempDebugDistance = 1.0f;
+			//	bool DebugResult = false;
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+			//		DebugResult = false;
+			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
+			//		myfile << "D-" << DebugResult << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 44990) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/x190y140.csv", std::ios::app);
+			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
+			//	float tempDebugDistance = 1.0f;
+			//	bool DebugResult = false;
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+			//		DebugResult = false;
+			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
+			//		myfile << "D-" << DebugResult << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 66362) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/x122y207.csv", std::ios::app);
+			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
+			//	float tempDebugDistance = 1.0f;
+			//	bool DebugResult = false;
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+			//		DebugResult = false;
+			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
+			//		myfile << "D-" << DebugResult << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
+			//if (pxPointer == 63937) {
+			//	std::ofstream myfile;
+			//	myfile.open(folderName + "/x257y199.csv", std::ios::app);
+			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
+			//	float tempDebugDistance = 1.0f;
+			//	bool DebugResult = false;
+			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
+			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
+			//		tempDebugDistance = 1.0f;
+			//		DebugResult = false;
+			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
+			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
+			//		DebugResult = false;
+			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
+			//		myfile << "D-" << DebugResult << ",";
+			//	}
+			//	myfile << "\n";
+			//	myfile.close();
+			//}
 			//if (pxPointer == 208964) {
 			//	std::ofstream myfile;
 			//	myfile.open(folderName + "/208964.csv", std::ios::app);
@@ -572,7 +706,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			if (clsPotentialMatch >= clsMatchThreshold) {
 				(*currFGMask) = 0;
 				(*currDarkPixel) = 0;
-				(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
+				//(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
 			}
 			// Classified as FG Pixels
 			else {
@@ -643,14 +777,14 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 						if (clsNBPotentialMatch >= clsNBMatchThreshold) {
 							(*currFGMask) = 0;
 							(*currDarkPixel) = 0;
-							(*currDynamicRate) += upDynamicRateIncrease;
+							//(*currDynamicRate) += upDynamicRateIncrease;
 							break;
 						}
 					}
 				}
 				
 				if (*currFGMask) {
-					(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
+					//(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
 				}
 			}
 			// UPDATE PROCESS
@@ -771,20 +905,26 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				bool check2 = check1 && ((*currUpdateRate) < upLearningRateUpperCap);
 				if (check2) {
 					float valueIncrease = upUpdateRateIncrease / ((*currPxDistance)*(*currDynamicRate));
-					if (isinf(valueIncrease)) {
+					/*if (isinf(valueIncrease)) {
 						valueIncrease = 150;
-					}
+					}*/
 					(*currUpdateRate) = std::min(upUpdateRateUpperCap, (*currUpdateRate) + valueIncrease);
 				}
 				check2 = !check1 && ((*currUpdateRate) >= upLearningRateLowerCap);
 				if (check2) {
 					float valueDecrease = ((upUpdateRateDecrease*(*currDynamicRate)) / (*currPxDistance));
-					if (isinf(valueDecrease)) {
+					/*if (isinf(valueDecrease)) {
 						valueDecrease = 10;
-					}
+					}*/
 
 					(*currUpdateRate) = std::max(upUpdateRateLowerCap, (*currUpdateRate) - valueDecrease);
 				}
+
+				if (((*currPxDistance)< UNSTABLE_REG_RATIO_MIN) && resBlinkFrame.data[pxPointer])
+					(*currDynamicRate) += bootstrapping ? upDynamicRateIncrease * 2 : upDynamicRateIncrease;
+				else
+					(*currDynamicRate) = std::max((*currDynamicRate) - upDynamicRateDecrease*((bootstrapping) ? 2 : resLastFGMask.data[pxPointer] ? 0.5f : 1), upDynamicRateDecrease);
+
 				check1 = (*currDistThreshold) < (std::pow((1 + ((*currPxDistance) * 2)), 2));
 				if (check1) {
 					(*currDistThreshold) += (*currDynamicRate)*0.01f;
@@ -799,9 +939,39 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			}
 		}
 	}
+	double min, max;
+	cv::minMaxLoc(resDynamicRate, &min, &max);
+	//cv::Mat test = resDynamicRate / max;
+	cv::Mat test;
+	cv::normalize(resDynamicRate, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	char s[25];
+	sprintf(s, "/v/V%06d.jpg", (frameIndex));
+	std::string imageSaveFolder;
+	imageSaveFolder = folderName + s;
+	cv::imwrite(imageSaveFolder, test);
 
+	cv::minMaxLoc(resCurrPxDistance, &min, &max);
+	cv::normalize(resCurrPxDistance, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	sprintf(s, "/d/D%06d.jpg", (frameIndex));
+	imageSaveFolder = folderName + s;
+	cv::imwrite(imageSaveFolder, test);
+
+	cv::minMaxLoc(resDistThreshold, &min, &max);
+	cv::normalize(resDistThreshold, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	sprintf(s, "/r/R%06d.jpg", (frameIndex));
+	imageSaveFolder = folderName + s;
+	cv::imwrite(imageSaveFolder, test);
+
+	cv::minMaxLoc(resUpdateRate, &min, &max);
+	cv::normalize(resUpdateRate, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	sprintf(s, "/u/U%06d.jpg", (frameIndex));
+	imageSaveFolder = folderName + s;
+	cv::imwrite(imageSaveFolder, test);
 	// POST PROCESSING
 	if (postSwitch) {
+		cv::bitwise_xor(resCurrFGMask, resLastRawFGMask, resCurrRawBlink);
+		cv::bitwise_or(resCurrRawBlink, resLastRawBlink, resBlinkFrame);
+		resCurrRawBlink.copyTo(resLastRawBlink);
 		cv::Mat element = cv::getStructuringElement(0, cv::Size(5, 5));
 		cv::Mat tempCurrFGMask;
 		resCurrFGMask.copyTo(tempCurrFGMask);
@@ -877,6 +1047,11 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
 		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
 		//cv::dilate(resLastFGMask, resLastFGMask, cv::Mat(), cv::Point(-1, -1), 2);
+
+		cv::dilate(resLastFGMask, resLastFGMaskDilated, cv::Mat(), cv::Point(-1, -1), 3);
+		cv::bitwise_and(resBlinkFrame, resLastFGMaskDilatedInverted, resBlinkFrame);
+		cv::bitwise_not(resLastFGMaskDilated, resLastFGMaskDilatedInverted);
+		cv::bitwise_and(resBlinkFrame, resLastFGMaskDilatedInverted, resBlinkFrame);
 
 		resLastFGMask = ContourFill(resLastFGMask);
 		resLastFGMask.copyTo(resCurrFGMask);

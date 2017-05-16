@@ -62,7 +62,7 @@ int main() {
 
 	// Total number of words per pixel
 	//double WordsNoList[3] = { 20,25,30 };
-	size_t Words_No = 30;
+	size_t Words_No = 35;
 	/*=====CLASSIFIER Parameters=====*/
 	//double ratio[2] = { 0.15,0.2 };
 	double descColourDiffRatio = 0.15;
@@ -87,7 +87,7 @@ int main() {
 	bool clsNbMatchSwitch = true;
 	// Matching threshold
 	//double MatchingThresholdList[4] = { 2,3,4,5 };
-	int clsMatchingThreshold = 3;
+	int clsMatchingThreshold = 2;
 
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
@@ -113,7 +113,7 @@ int main() {
 	// Feedback T(x) Increment
 	float upUpdateRateIncrease = 0.5f;
 	// Feedback T(x) Decrement
-	float upUpdateRateDecrease = 0.25f;
+	float upUpdateRateDecrease = 0.5f;
 	// Feedback T(x) Lowest
 	float upUpdateRateLowest = 2.0f;
 	// Feedback T(x) Highest
@@ -140,7 +140,7 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 5; datasetIndex < 6; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex < 1; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";

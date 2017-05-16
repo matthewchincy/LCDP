@@ -314,6 +314,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 	DarkPixelGenerator(inputGrayImg, inputImg, resLastGrayImg, resLastImg, resDarkPixel);
 	// BG Word pointer
 	DescriptorStruct * bgWord = nullptr;
+	// NB Word pointer
+	DescriptorStruct * nbBgWord = nullptr;
 	// Current bg word's persistence	
 	float currWordPersistence;
 	for (size_t pxPointer = 0; pxPointer < frameInitTotalPixel; ++pxPointer) {
@@ -749,6 +751,10 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 						// neighbor RGB descriptor threshold
 						const double nbRGBThreshold = std::max(clsRGBThreshold, floor(clsRGBThreshold*(*nbDistThreshold)));
 
+						// Current Match Distance
+						float currMatchDistance = 1.0f;
+						int currMatchModel = 0;
+
 						float nbLastWordPersistence = FLT_MAX;
 						size_t nbLocalWordIdx = 0;
 						while ((nbLocalWordIdx < WORDS_NO) && (clsNBPotentialMatch < clsNBMatchThreshold)) {
@@ -764,9 +770,26 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 								tempLCDPDistance, tempRGBDistance, matchResult);
 
 							if (!matchResult) {
+								if (std::rand() % (updateRate) == 0) {
+									if (tempLCDPDistance < (nbLCDPThreshold / 2)) {
+										for (size_t channel = 0; channel < 3; channel++) {
+											(*bgWord).rgb[channel] = currWord.rgb[channel];
+										}
+										for (size_t channel = 0; channel < descNbNo; channel++) {
+											(*bgWord).LCDP[channel] = currWord.LCDP[channel];
+										}
+										(*bgWord).nowF = frameIndex;
+										(*bgWord).gray = currWord.gray;
+									}
+								}
+
 								(*bgWord).frameCount += 1;
 								(*bgWord).q = frameIndex;
 								clsNBPotentialMatch++;
+								if (currMatchDistance > ((tempLCDPDistance + tempRGBDistance) / 2.0f)) {
+									currMatchModel = nbLocalWordIdx;
+									currMatchDistance = ((tempLCDPDistance + tempRGBDistance) / 2.0f);
+								}								
 							}
 						
 							// Update position of model in background model
@@ -792,6 +815,20 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 						if (clsNBPotentialMatch >= clsNBMatchThreshold) {
 							(*currFGMask) = 0;
 							(*currDarkPixel) = 0;
+							//// Replace Model from NB to the last model of bg word
+							//if (std::rand() % (updateRate) == 0) {
+							//	bgWord = (bgWordPtr + currModelIndex + WORDS_NO - 1);
+							//	nbBgWord = (bgWordPtr + nbModelIndex + currMatchModel);
+							//	for (size_t channel = 0; channel < 3; channel++) {
+							//		(*bgWord).rgb[channel] = (*nbBgWord).rgb[channel];
+							//	}
+							//	for (size_t channel = 0; channel < descNbNo; channel++) {
+							//		(*bgWord).LCDP[channel] = (*nbBgWord).LCDP[channel];
+							//	}
+							//	(*bgWord).frameCount = 1;
+							//	(*bgWord).p = frameIndex;
+							//	(*bgWord).q = frameIndex;
+							//}
 							//(*currDynamicRate) += upDynamicRateIncrease;
 							break;
 						}

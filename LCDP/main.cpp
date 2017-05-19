@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.1 Debug";
+	programVersion = "RL V1.5 ALL Test 3.2 Debug";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -61,7 +61,6 @@ int main() {
 	bool PreSwitch = true;
 
 	// Total number of words per pixel
-	//double WordsNoList[3] = { 20,25,30 };
 	size_t Words_No = 35;
 	/*=====CLASSIFIER Parameters=====*/
 	//double ratio[2] = { 0.15,0.2 };
@@ -76,8 +75,6 @@ int main() {
 	bool clsLCDPDiffSwitch = true;
 	// LCDP differences threshold (0-1)
 	//double LCDPThreshold = readDoubleInput("LCDP Threshold (0-1)");
-	//double LCDPThresh[5] = { 0.26,0.32,0.38,0.45,0.5};
-	//double LCDPThresh[1] = { 0.2 };
 	double clsLCDPThreshold = 0.25;
 	// Up LCDP differences threshold
 	double clsUpLCDPThreshold = 0.7;
@@ -86,12 +83,11 @@ int main() {
 	// neighborhood matching switch
 	bool clsNbMatchSwitch = true;
 	// Matching threshold
-	//double MatchingThresholdList[4] = { 2,3,4,5 };
 	int clsMatchingThreshold = 2;
 
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
-	bool upRandomReplaceSwitch = true;
+	bool upRandomReplaceSwitch = false;
 	// Random update neighborhood model switch
 	bool upRandomUpdateNbSwitch = false;
 	// Feedback loop switch
@@ -121,13 +117,18 @@ int main() {
 
 	/*=====RGB Dark Pixel Parameter=====*/
 	// Minimum Intensity Ratio
-	float darkMinIntensityRatio = 0.25;
+	float darkMinIntensityRatio = 0.25f;
 	// Maximum Intensity Ratio
-	float darkMaxIntensityRatio = 0.8;
+	float darkMaxIntensityRatio = 0.8f;
 	// R-channel different ratio
-	float darkRDiffRatio = 0.15;
+	//float darkRDiffRatio = 0.15;
+	float darkRDiffRatioMin = 0.04097f;
+	float darkRDiffRatioMax = 0.08477f;
 	// G-channel different ratio
-	float darkGDiffRatio = 0.1;
+	//float darkGDiffRatio = 0.1;
+	float darkGDiffRatioMin = -0.0002f;
+	float darkGDiffRatioMax = 0.02774f;
+
 
 	/*=====POST PROCESS Parameters=====*/
 	bool PostSwitch = true;
@@ -140,7 +141,7 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 0; datasetIndex < 3; datasetIndex++) {
+	for (size_t datasetIndex = 7; datasetIndex < 8; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
@@ -207,7 +208,7 @@ int main() {
 			clsNbMatchSwitch, ROI_FRAME, FRAME_SIZE, upRandomReplaceSwitch, upRandomUpdateNbSwitch,
 			upFeedbackSwitch, upDynamicRateIncrease, upDynamicRateDecrease, upMinDynamicRate, upUpdateRateIncrease,
 			upUpdateRateDecrease, upUpdateRateLowest, upUpdateRateHighest,
-			darkMinIntensityRatio, darkMaxIntensityRatio, darkRDiffRatio, darkGDiffRatio,
+			darkMinIntensityRatio, darkMaxIntensityRatio, darkRDiffRatioMin, darkRDiffRatioMax,darkGDiffRatioMin, darkGDiffRatioMax,
 			PostSwitch);
 
 		// Initialize background subtractor

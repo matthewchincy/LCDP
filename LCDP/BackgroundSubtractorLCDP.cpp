@@ -21,8 +21,9 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(size_t inputWordsNo, bool inp
 	bool inputClsNbMatchSwitch, cv::Mat inputROI, cv::Size inputFrameSize, bool inputUpRandomReplaceSwitch, bool inputUpRandomUpdateNbSwitch,
 	bool inputUpFeedbackSwitch, float inputUpDynamicRateIncrease, float inputUpDynamicRateDecrease,float inputUpMinDynamicRate, float inputUpUpdateRateIncrease,
 	float inputUpUpdateRateDecrease, float inputUpUpdateRateLowest, float inputUpUpdateRateHighest, 
-	float inputDarkMinIntensityRatio, float inputDarkMaxIntensityRatio, float inputDarkRDiffRatio, float inputDarkGDiffRatio,
-	bool inputPostSwitch) :
+	float inputDarkMinIntensityRatio, float inputDarkMaxIntensityRatio, float inputDarkRDiffRatioMin, float inputDarkRDiffRatioMax,
+	float inputDarkGDiffRatioMin, float inputDarkGDiffRatioMax,
+	bool inputPostSwitch):
 	/*=====LOOK-UP TABLE=====*/
 	// Internal pixel info LUT for all possible pixel indexes
 	pxInfoLUTPtr(nullptr),
@@ -119,9 +120,13 @@ BackgroundSubtractorLCDP::BackgroundSubtractorLCDP(size_t inputWordsNo, bool inp
 	// Maximum Intensity Ratio
 	darkMaxIntensityRatio(inputDarkMaxIntensityRatio),
 	// R-channel different ratio
-	darkRDiffRatio(inputDarkRDiffRatio),
+	darkRDiffRatioMin(inputDarkRDiffRatioMin),
+	darkRDiffRatioMax(inputDarkRDiffRatioMax),
+
 	// G-channel different ratio
-	darkGDiffRatio(inputDarkGDiffRatio),
+	darkGDiffRatioMin(inputDarkGDiffRatioMin),
+	darkGDiffRatioMax(inputDarkGDiffRatioMax),
+
 
 	/*====POST Parameters=====*/
 	// Post processing switch
@@ -362,303 +367,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			float currLastWordPersistence = FLT_MAX;
 			// Current pixel's background word index
 			int currLocalWordIdx = 0;
-			/*if (pxPointer == 45459) {
-				std::ofstream myfile;
-				myfile.open(folderName + "/x99y126.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-				float tempDebugDistance = 1.0f;
-				bool DebugResult = false;
-				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					DebugResult = false;
-					RGBDarkPixel(*bgWord, currWord, DebugResult);
-					myfile << "D-" << DebugResult << ",";
-				}
-				myfile << "\n";
-				myfile.close();
-			}
-			if (pxPointer == 55126) {
-				std::ofstream myfile;
-				myfile.open(folderName + "/x46y153.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-				float tempDebugDistance = 1.0f;
-				bool DebugResult = false;
-				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					DebugResult = false;
-					RGBDarkPixel(*bgWord, currWord, DebugResult);
-					myfile << "D-" << DebugResult << ",";
-				}
-				myfile << "\n";
-				myfile.close();
-			}
-			if (pxPointer == 38616) {
-				std::ofstream myfile;
-				myfile.open(folderName + "/x96y107.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-				float tempDebugDistance = 1.0f;
-				bool DebugResult = false;
-				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					DebugResult = false;
-					RGBDarkPixel(*bgWord, currWord, DebugResult);
-					myfile << "D-" << DebugResult << ",";
-				}
-				myfile << "\n";
-				myfile.close();
-			}
-			if (pxPointer == 47415) {
-				std::ofstream myfile;
-				myfile.open(folderName + "/x255y131.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-				float tempDebugDistance = 1.0f;
-				bool DebugResult = false;
-				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					DebugResult = false;
-					RGBDarkPixel(*bgWord, currWord, DebugResult);
-					myfile << "D-" << DebugResult << ",";
-				}
-				myfile << "\n";
-				myfile.close();
-			}
-			if (pxPointer == 54000) {
-				std::ofstream myfile;
-				myfile.open(folderName + "/x150y176.csv", std::ios::app);
-				myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-				float tempDebugDistance = 1.0f;
-				bool DebugResult = false;
-				for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-					bgWord = (bgWordPtr + currModelIndex + wordNo);
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-					myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-					tempDebugDistance = 1.0f;
-					DebugResult = false;
-					RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-					myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-					DebugResult = false;
-					RGBDarkPixel(*bgWord, currWord, DebugResult);
-					myfile << "D-" << DebugResult << ",";
-				}
-				myfile << "\n";
-				myfile.close();
-			}*/
-			//// Canoe
-			//if (pxPointer == 44815) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/x15y140.csv", std::ios::app);
-			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-			//	float tempDebugDistance = 1.0f;
-			//	bool DebugResult = false;
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-			//		DebugResult = false;
-			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
-			//		myfile << "D-" << DebugResult << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 484) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/x126y38.csv", std::ios::app);
-			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-			//	float tempDebugDistance = 1.0f;
-			//	bool DebugResult = false;
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-			//		DebugResult = false;
-			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
-			//		myfile << "D-" << DebugResult << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 44990) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/x190y140.csv", std::ios::app);
-			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-			//	float tempDebugDistance = 1.0f;
-			//	bool DebugResult = false;
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-			//		DebugResult = false;
-			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
-			//		myfile << "D-" << DebugResult << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 66362) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/x122y207.csv", std::ios::app);
-			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-			//	float tempDebugDistance = 1.0f;
-			//	bool DebugResult = false;
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-			//		DebugResult = false;
-			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
-			//		myfile << "D-" << DebugResult << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 63937) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/x257y199.csv", std::ios::app);
-			//	myfile << frameIndex << "," << (*currDistThreshold) << "," << (*currDynamicRate) << "," << (*currUpdateRate) << "," << (*currPxDistance) << ",";
-			//	float tempDebugDistance = 1.0f;
-			//	bool DebugResult = false;
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		LCDPMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "L-" << tempDebugDistance << "," << DebugResult << ",";
-			//		tempDebugDistance = 1.0f;
-			//		DebugResult = false;
-			//		RGBMatching(*bgWord, currWord, currRGBThreshold, tempDebugDistance, DebugResult);
-			//		myfile << "R-" << tempDebugDistance << "," << DebugResult << ",";
-			//		DebugResult = false;
-			//		RGBDarkPixel(*bgWord, currWord, DebugResult);
-			//		myfile << "D-" << DebugResult << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 208964) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/208964.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 210420) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/210420.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 221597) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/221597.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 220950) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/220950.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 217400) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/217400.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
-			//if (pxPointer == 178998) {
-			//	std::ofstream myfile;
-			//	myfile.open(folderName + "/178998.csv", std::ios::app);
-			//	myfile << frameIndex << ",";
-			//	for (int wordNo = 0; wordNo < WORDS_NO; wordNo++) {
-			//		bgWord = (bgWordPtr + currModelIndex + wordNo);
-			//		myfile << (*bgWord).lastF << "," << (*bgWord).nowF << ",";
-			//	}
-			//	myfile << "\n";
-			//	myfile.close();
-			//}
+			
 			// Number of potential matched model
 			int clsPotentialMatch = 0;
 			while (currLocalWordIdx < WORDS_NO && (clsPotentialMatch < clsMatchThreshold)) {
@@ -856,7 +565,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			(*totalPersistence) = (*totalPersistence) > (*currPersistenceThreshold) ? (*currPersistenceThreshold) : (*totalPersistence);
 			// UPDATE PROCESS
 			// Random replace current frame's descriptor with the model
-			if (upRandomReplaceSwitch) {
+			//if (upRandomReplaceSwitch) {
 				//if ((*currFGMask)) {
 				//	// FG
 				//	if (std::rand() % (updateRate*2) == 0) {
@@ -887,69 +596,69 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				//		(*bgWord).gray = currWord.gray;
 				//	}
 				//}
-			}
-			// UPDATE PROCESS
-			// Randomly update a selected neighbor descriptor with current descriptor
-			if (upRandomUpdateNbSwitch) {
-				if (std::rand() % (updateRate) == 0) {
-					cv::Point sampleCoor;
-					if (!upUse3x3Spread) {
-						getRandSamplePosition_5x5(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
-					}
-					else {
-						getRandSamplePosition_3x3(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
-					}
+			//}
+			//// UPDATE PROCESS
+			//// Randomly update a selected neighbor descriptor with current descriptor
+			//if (upRandomUpdateNbSwitch) {
+			//	if (std::rand() % (updateRate) == 0) {
+			//		cv::Point sampleCoor;
+			//		if (!upUse3x3Spread) {
+			//			getRandSamplePosition_5x5(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
+			//		}
+			//		else {
+			//			getRandSamplePosition_3x3(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
+			//		}
 
-					const size_t samplePxIndex = frameSize.width*sampleCoor.y + sampleCoor.x;
-					// Start index of the model of the current pixel
-					const size_t startNBModelIndex = pxInfoLUTPtr[samplePxIndex].modelIndex;
+			//		const size_t samplePxIndex = frameSize.width*sampleCoor.y + sampleCoor.x;
+			//		// Start index of the model of the current pixel
+			//		const size_t startNBModelIndex = pxInfoLUTPtr[samplePxIndex].modelIndex;
 
-					// Current neighbor pixel's matching threshold
-					int clsNBMatchThreshold = clsMatchThreshold;
+			//		// Current neighbor pixel's matching threshold
+			//		int clsNBMatchThreshold = clsMatchThreshold;
 
-					// Number of potential matched LCDP model
-					int clsNBPotentialMatch = 0;
+			//		// Number of potential matched LCDP model
+			//		int clsNBPotentialMatch = 0;
 
-					currLastWordPersistence = FLT_MAX;
-					currLocalWordIdx = 0;
-					while (currLocalWordIdx < WORDS_NO && (clsNBPotentialMatch < clsNBMatchThreshold)){
-						bgWord = (bgWordPtr + startNBModelIndex + currLocalWordIdx);
-						GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
-						float tempLCDPDistance = 0.0f;
-						float tempRGBDistance = 0.0f;
+			//		currLastWordPersistence = FLT_MAX;
+			//		currLocalWordIdx = 0;
+			//		while (currLocalWordIdx < WORDS_NO && (clsNBPotentialMatch < clsNBMatchThreshold)) {
+			//			bgWord = (bgWordPtr + startNBModelIndex + currLocalWordIdx);
+			//			GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
+			//			float tempLCDPDistance = 0.0f;
+			//			float tempRGBDistance = 0.0f;
 
-						bool matchResult = false;
-						// False:Match true:Not match
-						DescriptorMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, currUpLCDPThreshold, currRGBThreshold,
-							tempLCDPDistance, tempRGBDistance, matchResult);
+			//			bool matchResult = false;
+			//			// False:Match true:Not match
+			//			DescriptorMatching(*bgWord, currWord, currDescNeighNo, currLCDPThreshold, currUpLCDPThreshold, currRGBThreshold,
+			//				tempLCDPDistance, tempRGBDistance, matchResult);
 
-						if (!matchResult) {
-							(*bgWord).frameCount += 1;
-							(*bgWord).q = frameIndex;
-							clsNBPotentialMatch++;
-						}						
-						// Update position of model in background model
-						if (currWordPersistence > currLastWordPersistence) {
-							std::swap(bgWordPtr[startNBModelIndex + currLocalWordIdx], bgWordPtr[startNBModelIndex + currLocalWordIdx - 1]);
-						}
-						else
-							currLastWordPersistence = currWordPersistence;
-						++currLocalWordIdx;
-					}
-					// Sorting remaining models
-					while (currLocalWordIdx < WORDS_NO) {
-						bgWord = (bgWordPtr + startNBModelIndex + currLocalWordIdx);
-						GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
-						if (currWordPersistence > currLastWordPersistence) {
-							std::swap(bgWordPtr[startNBModelIndex + currLocalWordIdx], bgWordPtr[startNBModelIndex + currLocalWordIdx - 1]);
-						}
-						else {
-							currLastWordPersistence = currWordPersistence;
-						}
-						++currLocalWordIdx;
-					}
-				}
-			}
+			//			if (!matchResult) {
+			//				(*bgWord).frameCount += 1;
+			//				(*bgWord).q = frameIndex;
+			//				clsNBPotentialMatch++;
+			//			}
+			//			// Update position of model in background model
+			//			if (currWordPersistence > currLastWordPersistence) {
+			//				std::swap(bgWordPtr[startNBModelIndex + currLocalWordIdx], bgWordPtr[startNBModelIndex + currLocalWordIdx - 1]);
+			//			}
+			//			else
+			//				currLastWordPersistence = currWordPersistence;
+			//			++currLocalWordIdx;
+			//		}
+			//		// Sorting remaining models
+			//		while (currLocalWordIdx < WORDS_NO) {
+			//			bgWord = (bgWordPtr + startNBModelIndex + currLocalWordIdx);
+			//			GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
+			//			if (currWordPersistence > currLastWordPersistence) {
+			//				std::swap(bgWordPtr[startNBModelIndex + currLocalWordIdx], bgWordPtr[startNBModelIndex + currLocalWordIdx - 1]);
+			//			}
+			//			else {
+			//				currLastWordPersistence = currWordPersistence;
+			//			}
+			//			++currLocalWordIdx;
+			//		}
+			//	}
+			//}
 
 			// Update minimum distance
 			if (*currFGMask) {
@@ -1489,9 +1198,11 @@ void BackgroundSubtractorLCDP::RGBDarkPixel(DescriptorStruct &bgWord, Descriptor
 		currGValue = double(currWord.rgb[1] / totalCurrIntensityValue);
 		RDiff = std::abs(bgRValue - currRValue);
 		GDiff = std::abs(bgGValue - currGValue);
-		if ((RDiff < darkRDiffRatio) && (GDiff < darkGDiffRatio)) {
-		//if ((RDiff < 0.15) && (GDiff < 0.1)) {
-			result = false;
+		if ((RDiff <= darkRDiffRatioMax) && (GDiff <= darkGDiffRatioMax)) {
+			if ((RDiff >= darkRDiffRatioMin) && (GDiff >= darkGDiffRatioMin)) {
+				//if ((RDiff < 0.15) && (GDiff < 0.1)) {
+				result = false;
+			}
 		}
 	}
 }
@@ -1517,8 +1228,10 @@ void BackgroundSubtractorLCDP::DarkPixelGenerator(const cv::Mat &inputGrayImg, c
 			currGValue = double(inputRGBImg.data[(pxPointer * 3) + 1]) / totalCurrIntensityValue;
 			RDiff = std::abs(lastRValue - currRValue);
 			GDiff = std::abs(lastGValue - currGValue);
-			if ((RDiff < darkRDiffRatio) && (GDiff < darkGDiffRatio)) {
-				darkPixel.data[pxPointer] = 0;
+			if ((RDiff <= darkRDiffRatioMax) && (GDiff <= darkGDiffRatioMax)) {
+				if ((RDiff >= darkRDiffRatioMin) && (GDiff >= darkGDiffRatioMin)) {
+					darkPixel.data[pxPointer] = 0;
+				}
 			}
 		}
 	}

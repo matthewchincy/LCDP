@@ -14,7 +14,8 @@ public:
 		bool inputClsNbMatchSwitch, cv::Mat inputROI, cv::Size inputFrameSize, bool inputUpRandomReplaceSwitch, bool inputUpRandomUpdateNbSwitch,
 		bool inputUpFeedbackSwitch, float inputUpDynamicRateIncrease, float inputUpDynamicRateDecrease, float inputUpMinDynamicRate, float inputUpUpdateRateIncrease,
 		float inputUpUpdateRateDecrease, float inputUpUpdateRateLowest, float inputUpUpdateRateHighest,
-		float inputDarkMinIntensityRatio, float inputDarkMaxIntensityRatio, float inputDarkRDiffRatio, float inputDarkGDiffRatio,
+		float inputDarkMinIntensityRatio, float inputDarkMaxIntensityRatio, float inputDarkRDiffRatioMin, float inputDarkRDiffRatioMax,
+		float inputDarkGDiffRatioMin, float inputDarkGDiffRatioMax,
 		bool inputPostSwitch);
 
 	/*******DESTRUCTOR*******/ // Checked
@@ -255,10 +256,13 @@ protected:
 	// Maximum Intensity Ratio
 	float darkMaxIntensityRatio;
 	// R-channel different ratio
-	float darkRDiffRatio;
-	// G-channel different ratio
-	float darkGDiffRatio;
+	float darkRDiffRatioMin;
+	float darkRDiffRatioMax;
 
+	// G-channel different ratio
+	float darkGDiffRatioMin;
+	float darkGDiffRatioMax;
+	
 	/*=====METHODS=====*/
 	/*=====DEFAULT methods=====*/
 	// Refreshes all samples based on the last analyzed frame - checked

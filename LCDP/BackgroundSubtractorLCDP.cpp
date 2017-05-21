@@ -828,7 +828,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::bitwise_and(resBlinkFrame, resLastFGMaskDilatedInverted, resBlinkFrame);
 		cv::bitwise_not(resLastFGMaskDilated, resLastFGMaskDilatedInverted);
 		cv::bitwise_and(resBlinkFrame, resLastFGMaskDilatedInverted, resBlinkFrame);
-
+		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
 		resLastFGMask = ContourFill(resLastFGMask);
 		resLastFGMask.copyTo(resCurrFGMask);
 		resT_1FGMask.copyTo(resT_2FGMask);

@@ -11,7 +11,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.2 Debug";
+	programVersion = "RL V1.5 ALL Test 3.3 Debug";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -141,9 +141,11 @@ int main() {
 
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 7; datasetIndex < 8; datasetIndex++) {
+	for (size_t datasetIndex = 12; datasetIndex < 13; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
+		case 12:filename = "traffic";
+			break;
 		case 0: filename = "bungalows";
 			break;
 		case 1: filename = "cubicle";

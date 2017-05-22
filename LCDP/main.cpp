@@ -12,7 +12,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.3 Debug";
+	programVersion = "RL V1.5 ALL Test 3.4";
 	
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -66,7 +66,7 @@ int main() {
 		std::cout << datasetIndex << ": " << filename << std::endl;
 	}
 	// Test database name
-	datasetInput = readVectorIntInput("Please input dataset id (-1:Done;999:All");
+	datasetInput = readVectorIntInput("Please input dataset id (-1:Done;999:All)");
 	if (datasetInput.at(0) == 999) {
 		std::vector<int>().swap(datasetInput);
 		for (size_t datasetIndex = 0; datasetIndex < 14; datasetIndex++) {

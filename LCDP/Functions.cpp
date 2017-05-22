@@ -1,5 +1,6 @@
 #include "Functions.h"
 #include <iostream>
+#include <vector>
 
 // Program version
 std::string programVersion;
@@ -16,7 +17,40 @@ bool saveResultSwitch;
 // Evaluate result switch
 bool evaluateResultSwitch;
 
-///Read input functions
+///Read input Functions///
+// Read integer value input
+std::vector<int> readVectorIntInput(std::string question) {
+	std::vector<int> input;
+	bool valid = false;
+	do
+	{
+		std::cout << question << " :" << std::flush;
+		int tempInput;
+		std::cin >> tempInput;
+		if (std::cin.good())
+		{			
+			if (tempInput == -1) {
+				valid = true;
+			}
+			else if (tempInput == 999) {
+				std::vector<int>().swap(input);
+				input.push_back(tempInput);
+				valid = true;
+			}
+			else {
+				input.push_back(tempInput);
+			}
+		}
+		else
+		{
+			std::cin.clear();
+			std::cin.ignore();
+			std::cout << "Invalid input; please re-enter double value only." << std::endl;
+		}
+	} while (!valid);
+
+	return (input);
+}
 // Read integer value input
 int readIntInput(std::string question)
 {

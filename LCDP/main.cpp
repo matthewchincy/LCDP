@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <conio.h>
 #include <windows.h>
+#include <vector>
 
 int main() {
 	// Program version
@@ -22,7 +23,56 @@ int main() {
 	double FRAME_COUNT;
 	// Frame size of the input video
 	cv::Size FRAME_SIZE;
-
+	// Video file name
+	std::string filename;
+	// Test dataset name
+	std::vector<int> datasetInput;
+	std::cout << "Dataset list:" << std::endl;
+	for (size_t datasetIndex = 0; datasetIndex < 14; datasetIndex++) {
+		// Video file name
+		switch (datasetIndex) {
+		case 0: filename = "bungalows";
+			break;
+		case 1: filename = "cubicle";
+			break;
+		case 2: filename = "canoe";
+			break;
+		case 3: filename = "fountain02";
+			break;
+		case 4: filename = "sofa";
+			break;
+		case 5: filename = "highway";
+			break;
+		case 6: filename = "office";
+			break;
+		case 7: filename = "badminton";
+			break;
+		case 8: filename = "tunnelExit_0_35fps";
+			break;
+		case 9: filename = "PETS2006";
+			break;
+		case 10: filename = "fall";
+			break;
+		case 11:filename = "copyMachine";
+			break;
+		case 12:filename = "wetSnow";
+			break;
+		case 13:filename = "snowFall";
+			break;
+		default:
+			std::cout << "Error occurs!";
+			break;
+		}
+		std::cout << datasetIndex << ": " << filename << std::endl;
+	}
+	// Test database name
+	datasetInput = readVectorIntInput("Please input dataset id (-1:Done;999:All");
+	if (datasetInput.at(0) == 999) {
+		std::vector<int>().swap(datasetInput);
+		for (size_t datasetIndex = 0; datasetIndex < 14; datasetIndex++) {
+			datasetInput.push_back(datasetIndex);
+		}
+	}
 	// Show input frame switch	
 	showInputSwitch = readBoolInput("Show input frame(1/0)");
 	// Show output frame switch
@@ -31,8 +81,7 @@ int main() {
 	saveResultSwitch = readBoolInput("Save result(1/0)");
 	// Evaluate result switch
 	evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
-	// Video file name
-	std::string filename;
+	
 	// Read video input from user
 	cv::VideoCapture videoCapture;
 
@@ -138,21 +187,22 @@ int main() {
 	std::string resultFolderName;
 	std::string imageSaveFolder;
 	const char *s2;
-
+	int datasetNo;
 	char s[25];
 	std::ofstream myfile;
-	for (size_t datasetIndex = 12; datasetIndex < 13; datasetIndex++) {
+	//for (size_t datasetIndex = 7; datasetIndex < 8; datasetIndex++) {
+	for (std::vector<int>::iterator datasetIndex = datasetInput.begin(); datasetIndex != datasetInput.end();++datasetIndex) {
+
+		//datasetNo = *datasetIndex;
 		// Video file name
-		switch (datasetIndex) {
-		case 12:filename = "traffic";
-			break;
+		switch (*datasetIndex) {
 		case 0: filename = "bungalows";
 			break;
 		case 1: filename = "cubicle";
 			break;
-		case 3: filename = "canoe";
+		case 2: filename = "canoe";
 			break;
-		case 2: filename = "fountain02";
+		case 3: filename = "fountain02";
 			break;
 		case 4: filename = "sofa";
 			break;
@@ -167,6 +217,12 @@ int main() {
 		case 9: filename = "PETS2006";
 			break;
 		case 10: filename = "fall";
+			break;
+		case 11:filename = "copyMachine";
+			break;
+		case 12:filename = "wetSnow";
+			break;
+		case 13:filename = "snowFall";
 			break;
 		default:
 			std::cout << "Error occurs!";

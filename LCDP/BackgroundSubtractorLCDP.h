@@ -219,6 +219,8 @@ protected:
 	// Current pixel distance
 	cv::Mat resCurrPxDistance;
 
+	// Current match result both RGB and LCDP
+	cv::Mat resMatchResultBoth;
 	// Current foreground mask
 	cv::Mat resCurrFGMask;
 	// Previous foreground mask
@@ -287,7 +289,7 @@ protected:
 	// Descriptor matching (RETURN: LCDPResult-1:Not match, 0: Match)
 	void BackgroundSubtractorLCDP::DescriptorMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord
 		, const size_t &descNeighNo, const double LCDPThreshold, const double upLCDPThreshold, const double RGBThreshold,
-		float &LCDPDistance, float &RGBDistance, bool &matchResult);
+		float &LCDPDistance, float &RGBDistance, bool &matchResult, bool &matchResultBoth);
 	
 	// LCD Matching (RETURN-1:Not match, 0: Match)
 	void LCDPMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord,

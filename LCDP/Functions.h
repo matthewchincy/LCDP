@@ -4,6 +4,7 @@
 #define __Functions_H_INCLUDED
 #include <opencv2\opencv.hpp>
 #include <time.h>
+#include <vector>
 
 // Program version
 extern std::string programVersion;
@@ -11,6 +12,7 @@ extern std::string programVersion;
 extern time_t tempStartTime;
 // Program finish time
 extern time_t tempFinishTime;
+
 // Show input frame switch
 extern bool showInputSwitch;
 // Show output frame switch
@@ -21,6 +23,8 @@ extern bool saveResultSwitch;
 extern bool evaluateResultSwitch;
 
 ///Read input Functions///
+// Read integer value input
+std::vector<int> readVectorIntInput(std::string question);
 // Read integer value input
 int readIntInput(std::string question);
 // Read double value input

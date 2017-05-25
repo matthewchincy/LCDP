@@ -12,8 +12,8 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.4";
-	
+	programVersion = "RL TEST VIBE UPDATE";
+
 	std::cout << "Program Version: " << programVersion << std::endl;
 
 	/// Frame Parameters
@@ -81,7 +81,7 @@ int main() {
 	saveResultSwitch = readBoolInput("Save result(1/0)");
 	// Evaluate result switch
 	evaluateResultSwitch = readBoolInput("Evaluate result(1/0)");
-	
+
 	// Read video input from user
 	cv::VideoCapture videoCapture;
 
@@ -103,9 +103,9 @@ int main() {
 	}
 	// Program start time
 	std::string startTime;
-	
 
-	/****Define Threshold****/		
+
+	/****Define Threshold****/
 	/*=====PRE PROCESS Parameters=====*/
 	bool PreSwitch = true;
 
@@ -186,13 +186,14 @@ int main() {
 	std::string saveFolderName;
 	std::string resultFolderName;
 	std::string imageSaveFolder;
+	bool success;
 	const char *s2;
 	int datasetNo;
 	char s[25];
 	std::ofstream myfile;
 	//for (size_t datasetIndex = 7; datasetIndex < 8; datasetIndex++) {
-	for (std::vector<int>::iterator datasetIndex = datasetInput.begin(); datasetIndex != datasetInput.end();++datasetIndex) {
-
+	for (std::vector<int>::iterator datasetIndex = datasetInput.begin(); datasetIndex != datasetInput.end(); ++datasetIndex) {
+		success = false;
 		//datasetNo = *datasetIndex;
 		// Video file name
 		switch (*datasetIndex) {
@@ -230,114 +231,117 @@ int main() {
 		}
 		// Read video input from user
 		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-		videoCapture = readVideoInput2(&filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
-		std::cout << "Now load dataset: " << filename << std::endl;
-
-		versionFolderName = filename + "/" + programVersion;
-		s2 = versionFolderName.c_str();
-		_mkdir(s2);
-		
-		myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
-		myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
-		myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
-		myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Random Replace Switch, Random Update Switch,";
-		myfile << "Feedback Switch,V Inc, V Desc,V Min, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
-		myfile.close();
-
-		ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
-		ROI_FRAME = cv::Scalar_<uchar>(255);
-
-		// Read first frame from video
-		videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
-		videoCapture >> inputFrame;
-
-		// Current date/time based on current system
-		tempStartTime = time(0);
-		// Program start time
-		startTime = currentDateTimeStamp(&tempStartTime);
-
-		// Current process result folder name
-		saveFolderName = versionFolderName + "/" + programVersion + "-" + startTime;
-
-		// Declare background subtractor constructor
-		BackgroundSubtractorLCDP backgroundSubtractorLCDP(Words_No, PreSwitch,
-			descColourDiffRatio, clsRGBDiffSwitch, clsRGBThreshold, clsLCDPDiffSwitch,
-			clsLCDPThreshold, clsUpLCDPThreshold, clsLCDPMaxThreshold, clsMatchingThreshold,
-			clsNbMatchSwitch, ROI_FRAME, FRAME_SIZE, upRandomReplaceSwitch, upRandomUpdateNbSwitch,
-			upFeedbackSwitch, upDynamicRateIncrease, upDynamicRateDecrease, upMinDynamicRate, upUpdateRateIncrease,
-			upUpdateRateDecrease, upUpdateRateLowest, upUpdateRateHighest,
-			darkMinIntensityRatio, darkMaxIntensityRatio, darkRDiffRatioMin, darkRDiffRatioMax,darkGDiffRatioMin, darkGDiffRatioMax,
-			PostSwitch);
-
-		// Initialize background subtractor
-		backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
-
-		if (saveResultSwitch) {
-			s2 = saveFolderName.c_str();
-			_mkdir(s2);
-			SaveParameter(versionFolderName, saveFolderName);
-			backgroundSubtractorLCDP.folderName = saveFolderName;
-			backgroundSubtractorLCDP.SaveParameter(versionFolderName, saveFolderName);
-			resultFolderName = saveFolderName + "/v";
-			s2 = resultFolderName.c_str();
-			_mkdir(s2);
-			resultFolderName = saveFolderName + "/d";
-			s2 = resultFolderName.c_str();
-			_mkdir(s2);
-			resultFolderName = saveFolderName + "/r";
-			s2 = resultFolderName.c_str();
-			_mkdir(s2);
-			resultFolderName = saveFolderName + "/u";
-			s2 = resultFolderName.c_str();
-			_mkdir(s2);
-			resultFolderName = saveFolderName + "/results";
-			s2 = resultFolderName.c_str();
+		videoCapture = readVideoInput2(&filename, &FPS, &FRAME_COUNT, &FRAME_SIZE, &success);
+		if (success) {
+			std::cout << "Now load dataset: " << filename << std::endl;
+			versionFolderName = filename + "/" + programVersion;
+			s2 = versionFolderName.c_str();
 			_mkdir(s2);
 
-		}
+			myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
+			myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
+			myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
+			myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Random Replace Switch, Random Update Switch,";
+			myfile << "Feedback Switch,V Inc, V Desc,V Min, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
+			myfile.close();
 
-		for (int currFrameIndex = 1; currFrameIndex <= FRAME_COUNT; currFrameIndex++) {
-			// Process current frame
-			backgroundSubtractorLCDP.Process(inputFrame, fgMask);
-			if (showInputSwitch) {
-				cv::imshow("Input Video", inputFrame);
-			}
-			if (showOutputSwitch) {
-				cv::imshow("Results", fgMask);
-			}
+			ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
+			ROI_FRAME = cv::Scalar_<uchar>(255);
+
+			// Read first frame from video
+			videoCapture.set(cv::CAP_PROP_POS_FRAMES, 0);
+			videoCapture >> inputFrame;
+
+			// Current date/time based on current system
+			tempStartTime = time(0);
+			// Program start time
+			startTime = currentDateTimeStamp(&tempStartTime);
+
+			// Current process result folder name
+			saveFolderName = versionFolderName + "/" + programVersion + "-" + startTime;
+
+			// Declare background subtractor constructor
+			BackgroundSubtractorLCDP backgroundSubtractorLCDP(Words_No, PreSwitch,
+				descColourDiffRatio, clsRGBDiffSwitch, clsRGBThreshold, clsLCDPDiffSwitch,
+				clsLCDPThreshold, clsUpLCDPThreshold, clsLCDPMaxThreshold, clsMatchingThreshold,
+				clsNbMatchSwitch, ROI_FRAME, FRAME_SIZE, upRandomReplaceSwitch, upRandomUpdateNbSwitch,
+				upFeedbackSwitch, upDynamicRateIncrease, upDynamicRateDecrease, upMinDynamicRate, upUpdateRateIncrease,
+				upUpdateRateDecrease, upUpdateRateLowest, upUpdateRateHighest,
+				darkMinIntensityRatio, darkMaxIntensityRatio, darkRDiffRatioMin, darkRDiffRatioMax, darkGDiffRatioMin, darkGDiffRatioMax,
+				PostSwitch);
+
+			// Initialize background subtractor
+			backgroundSubtractorLCDP.Initialize(inputFrame, ROI_FRAME);
+
 			if (saveResultSwitch) {
-				sprintf(s, "/bin%06d.png", (currFrameIndex));
-				imageSaveFolder = resultFolderName + s;
-				cv::imwrite(imageSaveFolder, fgMask);
+				s2 = saveFolderName.c_str();
+				_mkdir(s2);
+				SaveParameter(versionFolderName, saveFolderName);
+				backgroundSubtractorLCDP.folderName = saveFolderName;
+				backgroundSubtractorLCDP.SaveParameter(versionFolderName, saveFolderName);
+				resultFolderName = saveFolderName + "/v";
+				s2 = resultFolderName.c_str();
+				_mkdir(s2);
+				resultFolderName = saveFolderName + "/d";
+				s2 = resultFolderName.c_str();
+				_mkdir(s2);
+				resultFolderName = saveFolderName + "/r";
+				s2 = resultFolderName.c_str();
+				_mkdir(s2);
+				resultFolderName = saveFolderName + "/u";
+				s2 = resultFolderName.c_str();
+				_mkdir(s2);
+				resultFolderName = saveFolderName + "/results";
+				s2 = resultFolderName.c_str();
+				_mkdir(s2);
+
 			}
-			// If 'esc' key is pressed, break loop
-			if (cv::waitKey(1) == 27)
-			{
-				std::cout << "Program ended by users." << std::endl;
-				break;
+
+			for (int currFrameIndex = 1; currFrameIndex <= FRAME_COUNT; currFrameIndex++) {
+				// Process current frame
+				backgroundSubtractorLCDP.Process(inputFrame, fgMask);
+				if (showInputSwitch) {
+					cv::imshow("Input Video", inputFrame);
+				}
+				if (showOutputSwitch) {
+					cv::imshow("Results", fgMask);
+				}
+				if (saveResultSwitch) {
+					sprintf(s, "/bin%06d.png", (currFrameIndex));
+					imageSaveFolder = resultFolderName + s;
+					cv::imwrite(imageSaveFolder, fgMask);
+				}
+				// If 'esc' key is pressed, break loop
+				if (cv::waitKey(1) == 27)
+				{
+					std::cout << "Program ended by users." << std::endl;
+					break;
+				}
+				bool inputCheck = videoCapture.read(inputFrame);
+				if (!inputCheck && (currFrameIndex < FRAME_COUNT)) {
+					std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
+					return -1;
+				}
 			}
-			bool inputCheck = videoCapture.read(inputFrame);
-			if (!inputCheck && (currFrameIndex < FRAME_COUNT)) {
-				std::cout << "Video having problem. Cannot read the frame from video file." << std::endl;
-				return -1;
+
+			tempFinishTime = time(0);
+			GenerateProcessTime(FRAME_COUNT, saveFolderName);
+
+			std::cout << "Background subtraction completed" << std::endl;
+
+			if (evaluateResultSwitch) {
+				if (saveResultSwitch) {
+					std::cout << "Now starting evaluate the processed result..." << std::endl;
+					EvaluateResult(filename, saveFolderName, versionFolderName);
+				}
+				else {
+					std::cout << "No saved results for evaluation" << std::endl;
+				}
 			}
 		}
-
-		tempFinishTime = time(0);
-		GenerateProcessTime(FRAME_COUNT, saveFolderName);
-
-		std::cout << "Background subtraction completed" << std::endl;
-
-		if (evaluateResultSwitch) {
-			if (saveResultSwitch) {
-				std::cout << "Now starting evaluate the processed result..." << std::endl;
-				EvaluateResult(filename, saveFolderName, versionFolderName);
-			}
-			else {
-				std::cout << "No saved results for evaluation" << std::endl;
-			}
+		else {
+			std::cout << "Cannot load dataset: " << filename << ". Skip it to next dataset!" << std::endl;
 		}
-
 	}
 	std::cout << "Program Completed!" << std::endl;
 	system("pause");

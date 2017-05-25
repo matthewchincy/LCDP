@@ -34,7 +34,7 @@ bool readBoolInput(std::string question);
 // Read video input
 cv::VideoCapture readVideoInput(std::string question, std::string *filename,
 	double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE);
-cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE);
+cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE, bool *success);
 
 /// Time Functions
 // Get current date/time, format is DDMMYYHHmmss

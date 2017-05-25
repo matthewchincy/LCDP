@@ -192,7 +192,7 @@ cv::VideoCapture readVideoInput(std::string question, std::string *filename, dou
 	return (videoCapture);
 }
 // Read video input
-cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE)
+cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRAME_COUNT, cv::Size *FRAME_SIZE,bool *success)
 {
 	// Video capture variable
 	cv::VideoCapture videoCapture;
@@ -221,6 +221,7 @@ cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRA
 			// Checking video whether successful be opened
 			if (videoCapture.isOpened() && !inputFrames.empty()) {
 				check = true;
+				(*success) = true;
 				break;
 			}
 		}
@@ -238,6 +239,8 @@ cv::VideoCapture readVideoInput2(std::string *filename, double *FPS, double *FRA
 		}
 		else {
 			std::cout << "\nVideo having problem. Cannot open the video file. Please re-enter valid filename" << std::endl;
+			(*success) = false;
+			break;
 		}
 	} while (!valid);
 
@@ -288,6 +291,7 @@ void EvaluateResult(std::string filename, std::string saveFolderName, std::strin
 	// Read index from temporalROI.txt
 	std::ifstream infile(filename + "/temporalROI.txt");
 	int idxFrom, idxTo;
+	bool success = true;
 	double TotalShadow = 0, TP = 0, TN = 0, FP = 0, FN = 0, SE = 0;
 	infile >> idxFrom >> idxTo;
 	infile.close();
@@ -295,9 +299,18 @@ void EvaluateResult(std::string filename, std::string saveFolderName, std::strin
 	char s[25];
 	for (size_t startIndex = idxFrom; startIndex <= idxTo; startIndex++) {
 		sprintf(s, "%06d.png", (startIndex));
-		//cv::Mat gtImg = cv::imread( "bungalows/groundtruth/gt000001.png");
 		cv::Mat gtImg = cv::imread(groundtruthFolder + "/gt" + s, CV_LOAD_IMAGE_GRAYSCALE);
+		if (gtImg.empty()) {
+			std::cout << "Groundtruth image cannot found!"<<std::endl;
+			success = false;
+			break;
+		}
 		cv::Mat resultImg = cv::imread(saveFolderName + "/results/bin" + s, CV_LOAD_IMAGE_GRAYSCALE);
+		if (resultImg.empty()) {
+			std::cout << "Result image cannot found!"<<std::endl;
+			success = false;
+			break;
+		}
 		for (size_t pxPointer = 0; pxPointer < (resultImg.rows*resultImg.cols); pxPointer++) {
 
 			double gtValue = gtImg.data[pxPointer];
@@ -336,40 +349,46 @@ void EvaluateResult(std::string filename, std::string saveFolderName, std::strin
 			}
 		}
 	}
-	const double recall = TP / (TP + FN);
-	const double precision = TP / (TP + FP);
-	const double FMeasure = (2.0*recall*precision) / (recall + precision);
+	if (success) {
 
-	const double specficity = TN / (TN + FP);
-	const double FPR = FP / (FP + TN);
-	const double FNR = FN / (TP + FN);
-	const double PBC = 100.0 * (FN + FP) / (TP + FP + FN + TN);
+		const double recall = TP / (TP + FN);
+		const double precision = TP / (TP + FP);
+		const double FMeasure = (2.0*recall*precision) / (recall + precision);
 
-	std::ofstream myfile;
-	myfile.open(saveFolderName + "/parameter.txt", std::ios::app);
-	myfile << "\n<<<<<-STATISTICS  RESULTS->>>>>\n";
-	myfile << "TRUE POSITIVE(TP): " << std::setprecision(0) << std::fixed << TP << std::endl;
-	myfile << "FALSE POSITIVE(FP): " << std::setprecision(0) << std::fixed << FP << std::endl;
-	myfile << "TRUE NEGATIVE(TN): " << std::setprecision(0) << std::fixed << TN << std::endl;
-	myfile << "FALSE NEGATIVE(FN): " << std::setprecision(0) << std::fixed << FN << std::endl;
-	myfile << "SHADOW ERROR(SE): " << std::setprecision(0) << std::fixed << SE << std::endl;
-	myfile << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
-	myfile << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
-	myfile << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
-	myfile << "SPECIFICITY: " << std::setprecision(3) << std::fixed << specficity << std::endl;
-	myfile << "FPR: " << std::setprecision(3) << std::fixed << FPR << std::endl;
-	myfile << "FNR: " << std::setprecision(3) << std::fixed << FNR << std::endl;
-	myfile << "PBC: " << std::setprecision(3) << std::fixed << PBC << std::endl;
-	myfile << "TOTAL SHADOW: " << std::setprecision(0) << std::fixed << TotalShadow << std::endl;
-	myfile.close();
-	std::cout << "\n<<<<<-STATISTICS  RESULTS->>>>>\n";
-	std::cout << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
-	std::cout << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
-	std::cout << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
+		const double specficity = TN / (TN + FP);
+		const double FPR = FP / (FP + TN);
+		const double FNR = FN / (TP + FN);
+		const double PBC = 100.0 * (FN + FP) / (TP + FP + FN + TN);
 
-	myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
-	myfile << "," << std::setprecision(3) << std::fixed << recall << "," << std::setprecision(3) << std::fixed << precision << "," << std::setprecision(3) << std::fixed << FMeasure << "\n";
-	myfile.close();
+		std::ofstream myfile;
+		myfile.open(saveFolderName + "/parameter.txt", std::ios::app);
+		myfile << "\n<<<<<-STATISTICS  RESULTS->>>>>\n";
+		myfile << "TRUE POSITIVE(TP): " << std::setprecision(0) << std::fixed << TP << std::endl;
+		myfile << "FALSE POSITIVE(FP): " << std::setprecision(0) << std::fixed << FP << std::endl;
+		myfile << "TRUE NEGATIVE(TN): " << std::setprecision(0) << std::fixed << TN << std::endl;
+		myfile << "FALSE NEGATIVE(FN): " << std::setprecision(0) << std::fixed << FN << std::endl;
+		myfile << "SHADOW ERROR(SE): " << std::setprecision(0) << std::fixed << SE << std::endl;
+		myfile << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
+		myfile << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
+		myfile << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
+		myfile << "SPECIFICITY: " << std::setprecision(3) << std::fixed << specficity << std::endl;
+		myfile << "FPR: " << std::setprecision(3) << std::fixed << FPR << std::endl;
+		myfile << "FNR: " << std::setprecision(3) << std::fixed << FNR << std::endl;
+		myfile << "PBC: " << std::setprecision(3) << std::fixed << PBC << std::endl;
+		myfile << "TOTAL SHADOW: " << std::setprecision(0) << std::fixed << TotalShadow << std::endl;
+		myfile.close();
+		std::cout << "\n<<<<<-STATISTICS  RESULTS->>>>>\n";
+		std::cout << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
+		std::cout << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
+		std::cout << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
+
+		myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
+		myfile << "," << std::setprecision(3) << std::fixed << recall << "," << std::setprecision(3) << std::fixed << precision << "," << std::setprecision(3) << std::fixed << FMeasure << "\n";
+		myfile.close();
+	}
+	else {
+		std::cout << "Skipping evaluation process!" << std::endl;
+	}
 }
 // Calculate processing time
 void GenerateProcessTime(double FRAME_COUNT, std::string saveFolderName) {

@@ -12,7 +12,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL TEST VIBE UPDATE";
+	programVersion = "RL V1.5 ALL Test 3.5";
 
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -279,7 +279,7 @@ int main() {
 				SaveParameter(versionFolderName, saveFolderName);
 				backgroundSubtractorLCDP.folderName = saveFolderName;
 				backgroundSubtractorLCDP.SaveParameter(versionFolderName, saveFolderName);
-				resultFolderName = saveFolderName + "/v";
+				/*resultFolderName = saveFolderName + "/v";
 				s2 = resultFolderName.c_str();
 				_mkdir(s2);
 				resultFolderName = saveFolderName + "/d";
@@ -290,16 +290,23 @@ int main() {
 				_mkdir(s2);
 				resultFolderName = saveFolderName + "/u";
 				s2 = resultFolderName.c_str();
-				_mkdir(s2);
+				_mkdir(s2);*/
 				resultFolderName = saveFolderName + "/results";
 				s2 = resultFolderName.c_str();
 				_mkdir(s2);
 
 			}
-
+			// Program start time
+			time_t firstStartTime = time(0);
+			time_t firstEndTime = time(0);
+			firstTotalDiffSeconds = 0.0;
 			for (int currFrameIndex = 1; currFrameIndex <= FRAME_COUNT; currFrameIndex++) {
+				firstStartTime = time(0);
 				// Process current frame
 				backgroundSubtractorLCDP.Process(inputFrame, fgMask);
+				firstEndTime = time(0);
+				firstTotalDiffSeconds += difftime(firstEndTime, firstStartTime);
+				tempStartTime = time(0);
 				if (showInputSwitch) {
 					cv::imshow("Input Video", inputFrame);
 				}

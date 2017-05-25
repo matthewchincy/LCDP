@@ -393,7 +393,8 @@ void EvaluateResult(std::string filename, std::string saveFolderName, std::strin
 // Calculate processing time
 void GenerateProcessTime(double FRAME_COUNT, std::string saveFolderName) {
 
-	double diffSeconds = difftime(tempFinishTime, tempStartTime);
+	//double diffSeconds = difftime(tempFinishTime, tempStartTime);
+	double diffSeconds = firstTotalDiffSeconds;
 	int seconds, hours, minutes;
 	minutes = diffSeconds / 60;
 	hours = minutes / 60;

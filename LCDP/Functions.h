@@ -12,6 +12,8 @@ extern std::string programVersion;
 extern time_t tempStartTime;
 // Program finish time
 extern time_t tempFinishTime;
+// Program process took time
+extern double firstTotalDiffSeconds;
 
 // Show input frame switch
 extern bool showInputSwitch;

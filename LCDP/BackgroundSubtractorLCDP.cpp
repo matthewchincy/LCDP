@@ -402,82 +402,80 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 					(*totalPersistence) = (*totalPersistence) + currWordPersistence;
 					/*(*totalPersistence) = std::min((*currPersistenceThreshold), (*totalPersistence) + currWordPersistence);*/
 					// BG
-					//if (std::rand() % (updateRate) == 0) {
-					//	if (tempLCDPDistance < (currLCDPThreshold / 2)) {
-					//		for (size_t channel = 0; channel < 3; channel++) {
-					//			(*bgWord).rgb[channel] = currWord.rgb[channel];
-					//		}
-					//		for (size_t channel = 0; channel < descNbNo; channel++) {
-					//			(*bgWord).LCDP[channel] = currWord.LCDP[channel];
-					//		}
-					//		(*bgWord).nowF = frameIndex;
-					//		(*bgWord).gray = currWord.gray;
-					//		/*nbBgWord = (bgWordPtr + currModelIndex + WORDS_NO - 1);
-					//		for (size_t channel = 0; channel < 3; channel++) {
-					//			(*nbBgWord).rgb[channel] = currWord.rgb[channel];
-					//		}
-					//		for (size_t channel = 0; channel < descNbNo; channel++) {
-					//			(*nbBgWord).LCDP[channel] = currWord.LCDP[channel];
-					//		}
-					//		(*nbBgWord).frameCount = 1;
-					//		(*nbBgWord).p = frameIndex;
-					//		(*nbBgWord).q = frameIndex;*/
-					//	}
-					//}
+					if (std::rand() % (updateRate) == 0) {
+						if (tempLCDPDistance < (currLCDPThreshold / 2)) {
+							for (size_t channel = 0; channel < 3; channel++) {
+								(*bgWord).rgb[channel] = currWord.rgb[channel];
+							}
+							for (size_t channel = 0; channel < descNbNo; channel++) {
+								(*bgWord).LCDP[channel] = currWord.LCDP[channel];
+							}
+							/*nbBgWord = (bgWordPtr + currModelIndex + WORDS_NO - 1);
+							for (size_t channel = 0; channel < 3; channel++) {
+								(*nbBgWord).rgb[channel] = currWord.rgb[channel];
+							}
+							for (size_t channel = 0; channel < descNbNo; channel++) {
+								(*nbBgWord).LCDP[channel] = currWord.LCDP[channel];
+							}
+							(*nbBgWord).frameCount = 1;
+							(*nbBgWord).p = frameIndex;
+							(*nbBgWord).q = frameIndex;*/
+						}
+					}
 				}
-				//// Sort background model based on persistence
-				//if (currWordPersistence > currLastWordPersistence) {
-				//	std::swap(bgWordPtr[currModelIndex + currLocalWordIdx], bgWordPtr[currModelIndex + currLocalWordIdx - 1]);
-				//}
-				//else {
-				//	currLastWordPersistence = currWordPersistence;
-				//}
+				// Sort background model based on persistence
+				if (currWordPersistence > currLastWordPersistence) {
+					std::swap(bgWordPtr[currModelIndex + currLocalWordIdx], bgWordPtr[currModelIndex + currLocalWordIdx - 1]);
+				}
+				else {
+					currLastWordPersistence = currWordPersistence;
+				}
 				++currLocalWordIdx;
 			}
 			
-			//// Sorting remaining models
-			//while (currLocalWordIdx < WORDS_NO) {
-			//	bgWord = (bgWordPtr + currModelIndex + currLocalWordIdx);
-			//	GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
-			//	if (currWordPersistence > currLastWordPersistence) {
-			//		std::swap(bgWordPtr[currModelIndex + currLocalWordIdx], bgWordPtr[currModelIndex + currLocalWordIdx - 1]);
-			//	}
-			//	else {
-			//		currLastWordPersistence = currWordPersistence;
-			//	}
-			//	++currLocalWordIdx;
-			//}
+			// Sorting remaining models
+			while (currLocalWordIdx < WORDS_NO) {
+				bgWord = (bgWordPtr + currModelIndex + currLocalWordIdx);
+				GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
+				if (currWordPersistence > currLastWordPersistence) {
+					std::swap(bgWordPtr[currModelIndex + currLocalWordIdx], bgWordPtr[currModelIndex + currLocalWordIdx - 1]);
+				}
+				else {
+					currLastWordPersistence = currWordPersistence;
+				}
+				++currLocalWordIdx;
+			}
 			// Successful classified as BG Pixels
 			if (clsPotentialMatch >= clsMatchThreshold) {
 				(*currFGMask) = 0;
 				(*currDarkPixel) = 0;
-				//// Replace Model from NB to the last model of bg word
+				// Replace Model from NB to the last model of bg word
 
-				//cv::Point sampleCoor;
-				//if (!upUse3x3Spread) {
-				//	getRandSamplePosition_5x5(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
-				//}
-				//else {
-				//	getRandSamplePosition_3x3(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
-				//}
-				//int randNum = rand() % WORDS_NO;
-				//const size_t samplePxIndex = frameSize.width*sampleCoor.y + sampleCoor.x;
-				//// Start index of the model of the current pixel
-				//const size_t startNBModelIndex = pxInfoLUTPtr[samplePxIndex].modelIndex;
-				//// Current pixel's update rate ('T(x)')
-				//const size_t nbUpdateRate = ceil(*((float*)(resUpdateRate.data + (samplePxIndex * 4))));
-				//if (std::rand() % (nbUpdateRate*2) == 0) {
-				//	nbBgWord = (bgWordPtr + startNBModelIndex + randNum);
-				//	for (size_t channel = 0; channel < 3; channel++) {
-				//		(*nbBgWord).rgb[channel] = currWord.rgb[channel];
-				//	}
-				//	for (size_t channel = 0; channel < descNbNo; channel++) {
-				//		(*nbBgWord).LCDP[channel] = currWord.LCDP[channel];
-				//	}
-				//	(*nbBgWord).frameCount = 1;
-				//	(*nbBgWord).p = frameIndex;
-				//	(*nbBgWord).q = frameIndex;
-				//}
+				cv::Point sampleCoor;
+				if (!upUse3x3Spread) {
+					getRandSamplePosition_5x5(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
+				}
+				else {
+					getRandSamplePosition_3x3(sampleCoor, cv::Point(pxInfoLUTPtr[pxPointer].coor_x, pxInfoLUTPtr[pxPointer].coor_y), 0, frameSize);
+				}
+				int randNum = rand() % WORDS_NO;
+				const size_t samplePxIndex = frameSize.width*sampleCoor.y + sampleCoor.x;
+				// Start index of the model of the current pixel
+				const size_t startNBModelIndex = pxInfoLUTPtr[samplePxIndex].modelIndex;
+				// Current pixel's update rate ('T(x)')
+				const size_t nbUpdateRate = ceil(*((float*)(resUpdateRate.data + (samplePxIndex * 4))));
+				if (std::rand() % (nbUpdateRate*2) == 0) {
+					nbBgWord = (bgWordPtr + startNBModelIndex + randNum);
+					for (size_t channel = 0; channel < 3; channel++) {
+						(*nbBgWord).rgb[channel] = currWord.rgb[channel];
+					}
+					for (size_t channel = 0; channel < descNbNo; channel++) {
+						(*nbBgWord).LCDP[channel] = currWord.LCDP[channel];
+					}
+					(*nbBgWord).frameCount = 1;
+					(*nbBgWord).p = frameIndex;
+					(*nbBgWord).q = frameIndex;
+				}
 				//(*currDynamicRate) = std::max(upMinDynamicRate, (*currDynamicRate) - upDynamicRateDecrease);
 			}
 			// Classified as FG Pixels
@@ -527,29 +525,27 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 								tempLCDPDistance, tempRGBDistance, matchResult,matchBoth);
 
 							if (!matchResult) {
-								//if (std::rand() % (updateRate) == 0) {
-								//	if (tempLCDPDistance < (nbLCDPThreshold / 2)) {										
-								//		for (size_t channel = 0; channel < 3; channel++) {
-								//			(*bgWord).rgb[channel] = currWord.rgb[channel];
-								//		}
-								//		for (size_t channel = 0; channel < descNbNo; channel++) {
-								//			(*bgWord).LCDP[channel] = currWord.LCDP[channel];
-								//		}
-								//		(*bgWord).nowF = frameIndex;
-								//		(*bgWord).gray = currWord.gray;
-								//		/*nbBgWord = (bgWordPtr + nbModelIndex + WORDS_NO - 1);
-								//		for (size_t channel = 0; channel < 3; channel++) {
-								//			(*nbBgWord).rgb[channel] = currWord.rgb[channel];
-								//		}
-								//		for (size_t channel = 0; channel < descNbNo; channel++) {
-								//			(*nbBgWord).LCDP[channel] = currWord.LCDP[channel];
-								//		}
-								//		(*nbBgWord).frameCount = 1;
-								//		(*nbBgWord).p = frameIndex;
-								//		(*nbBgWord).q = frameIndex;*/
-								//	}
-								//}
-								/*if (matchBoth) {
+								if (std::rand() % (updateRate) == 0) {
+									if (tempLCDPDistance < (nbLCDPThreshold / 2)) {										
+										for (size_t channel = 0; channel < 3; channel++) {
+											(*bgWord).rgb[channel] = currWord.rgb[channel];
+										}
+										for (size_t channel = 0; channel < descNbNo; channel++) {
+											(*bgWord).LCDP[channel] = currWord.LCDP[channel];
+										}
+										/*nbBgWord = (bgWordPtr + nbModelIndex + WORDS_NO - 1);
+										for (size_t channel = 0; channel < 3; channel++) {
+											(*nbBgWord).rgb[channel] = currWord.rgb[channel];
+										}
+										for (size_t channel = 0; channel < descNbNo; channel++) {
+											(*nbBgWord).LCDP[channel] = currWord.LCDP[channel];
+										}
+										(*nbBgWord).frameCount = 1;
+										(*nbBgWord).p = frameIndex;
+										(*nbBgWord).q = frameIndex;*/
+									}
+								}
+								if (matchBoth) {
 									(*matchResultBoth) = 255;
 								}
 								(*bgWord).frameCount += 1;
@@ -558,29 +554,29 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 								if (currMatchDistance > ((tempLCDPDistance + tempRGBDistance) / 2.0f)) {
 									currMatchModel = nbLocalWordIdx;
 									currMatchDistance = ((tempLCDPDistance + tempRGBDistance) / 2.0f);
-								}					*/			
+								}								
 							}
 						
-							//// Update position of model in background model
-							//if (currWordPersistence > nbLastWordPersistence) {
-							//	std::swap(bgWordPtr[nbModelIndex + nbLocalWordIdx], bgWordPtr[nbModelIndex + nbLocalWordIdx - 1]);
-							//}
-							//else
-							//	nbLastWordPersistence = currWordPersistence;
+							// Update position of model in background model
+							if (currWordPersistence > nbLastWordPersistence) {
+								std::swap(bgWordPtr[nbModelIndex + nbLocalWordIdx], bgWordPtr[nbModelIndex + nbLocalWordIdx - 1]);
+							}
+							else
+								nbLastWordPersistence = currWordPersistence;
 							++nbLocalWordIdx;
 						}
-						//// Sorting remaining models
-						//while (nbLocalWordIdx < WORDS_NO) {
-						//	bgWord = (bgWordPtr + nbModelIndex + nbLocalWordIdx);
-						//	GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
-						//	if (currWordPersistence > nbLastWordPersistence) {
-						//		std::swap(bgWordPtr[nbModelIndex + nbLocalWordIdx], bgWordPtr[nbModelIndex + nbLocalWordIdx - 1]);
-						//	}
-						//	else {
-						//		nbLastWordPersistence = currWordPersistence;
-						//	}
-						//	++nbLocalWordIdx;
-						//}
+						// Sorting remaining models
+						while (nbLocalWordIdx < WORDS_NO) {
+							bgWord = (bgWordPtr + nbModelIndex + nbLocalWordIdx);
+							GetLocalWordPersistence(*bgWord, frameIndex, descOffsetValue, currWordPersistence);
+							if (currWordPersistence > nbLastWordPersistence) {
+								std::swap(bgWordPtr[nbModelIndex + nbLocalWordIdx], bgWordPtr[nbModelIndex + nbLocalWordIdx - 1]);
+							}
+							else {
+								nbLastWordPersistence = currWordPersistence;
+							}
+							++nbLocalWordIdx;
+						}
 						if (clsNBPotentialMatch >= clsNBMatchThreshold) {
 							(*currFGMask) = 0;
 							(*currDarkPixel) = 0;
@@ -625,7 +621,7 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			(*totalPersistence) = (*totalPersistence) > (*currPersistenceThreshold) ? (*currPersistenceThreshold) : (*totalPersistence);
 			// UPDATE PROCESS
 			// Random replace current frame's descriptor with the model
-			if (upRandomReplaceSwitch) {
+			//if (upRandomReplaceSwitch) {
 				//if ((*currFGMask)) {
 				//	// FG
 				//	if (std::rand() % (updateRate*2) == 0) {
@@ -641,22 +637,22 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 				//	}
 				//}
 				//else {
-					// BG
-					if (std::rand() % (updateRate) == 0) {
-						int randNum = rand() % WORDS_NO;
-						bgWord = (bgWordPtr + currModelIndex + randNum);
+				//	// BG
+				//	if (std::rand() % (updateRate) == 0) {
+				//		int randNum = rand() % WORDS_NO;
+				//		bgWord = (bgWordPtr + currModelIndex + randNum);
 
-						for (size_t channel = 0; channel < 3; channel++) {
-							(*bgWord).rgb[channel] = currWord.rgb[channel];
-						}
-						for (size_t channel = 0; channel < descNbNo; channel++) {
-							(*bgWord).LCDP[channel] = currWord.LCDP[channel];
-						}
-						(*bgWord).nowF = frameIndex;
-						(*bgWord).gray = currWord.gray;
-					}
+				//		for (size_t channel = 0; channel < 3; channel++) {
+				//			(*bgWord).rgb[channel] = currWord.rgb[channel];
+				//		}
+				//		for (size_t channel = 0; channel < descNbNo; channel++) {
+				//			(*bgWord).LCDP[channel] = currWord.LCDP[channel];
+				//		}
+				//		(*bgWord).nowF = frameIndex;
+				//		(*bgWord).gray = currWord.gray;
+				//	}
 				//}
-			}
+			//}
 			//// UPDATE PROCESS
 			//// Randomly update a selected neighbor descriptor with current descriptor
 			//if (upRandomUpdateNbSwitch) {
@@ -777,34 +773,34 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 			}
 		}
 	}
-	double min, max;
-	cv::minMaxLoc(resDynamicRate, &min, &max);
-	//cv::Mat test = resDynamicRate / max;
-	cv::Mat test;
-	cv::normalize(resDynamicRate, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-	char s[25];
-	sprintf(s, "/v/V%06d.jpg", (frameIndex));
-	std::string imageSaveFolder;
-	imageSaveFolder = folderName + s;
-	cv::imwrite(imageSaveFolder, test);
+	//double min, max;
+	//cv::minMaxLoc(resDynamicRate, &min, &max);
+	////cv::Mat test = resDynamicRate / max;
+	//cv::Mat test;
+	//cv::normalize(resDynamicRate, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	//char s[25];
+	//sprintf(s, "/v/V%06d.jpg", (frameIndex));
+	//std::string imageSaveFolder;
+	//imageSaveFolder = folderName + s;
+	//cv::imwrite(imageSaveFolder, test);
 
-	cv::minMaxLoc(resCurrPxDistance, &min, &max);
-	cv::normalize(resCurrPxDistance, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-	sprintf(s, "/d/D%06d.jpg", (frameIndex));
-	imageSaveFolder = folderName + s;
-	cv::imwrite(imageSaveFolder, test);
+	//cv::minMaxLoc(resCurrPxDistance, &min, &max);
+	//cv::normalize(resCurrPxDistance, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	//sprintf(s, "/d/D%06d.jpg", (frameIndex));
+	//imageSaveFolder = folderName + s;
+	//cv::imwrite(imageSaveFolder, test);
 
-	cv::minMaxLoc(resDistThreshold, &min, &max);
-	cv::normalize(resDistThreshold, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-	sprintf(s, "/r/R%06d.jpg", (frameIndex));
-	imageSaveFolder = folderName + s;
-	cv::imwrite(imageSaveFolder, test);
+	//cv::minMaxLoc(resDistThreshold, &min, &max);
+	//cv::normalize(resDistThreshold, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	//sprintf(s, "/r/R%06d.jpg", (frameIndex));
+	//imageSaveFolder = folderName + s;
+	//cv::imwrite(imageSaveFolder, test);
 
-	cv::minMaxLoc(resUpdateRate, &min, &max);
-	cv::normalize(resUpdateRate, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-	sprintf(s, "/u/U%06d.jpg", (frameIndex));
-	imageSaveFolder = folderName + s;
-	cv::imwrite(imageSaveFolder, test);
+	//cv::minMaxLoc(resUpdateRate, &min, &max);
+	//cv::normalize(resUpdateRate, test, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+	//sprintf(s, "/u/U%06d.jpg", (frameIndex));
+	//imageSaveFolder = folderName + s;
+	//cv::imwrite(imageSaveFolder, test);
 	// POST PROCESSING
 	if (postSwitch) {
 		cv::bitwise_xor(resCurrFGMask, resLastRawFGMask, resCurrRawBlink);
@@ -893,8 +889,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::bitwise_not(resLastFGMaskDilated, resLastFGMaskDilatedInverted);
 		cv::bitwise_and(resBlinkFrame, resLastFGMaskDilatedInverted, resBlinkFrame);
 		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
-		cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_OPEN, element);
-		cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
+		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_OPEN, element);
+		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
 		resLastFGMask = ContourFill(resLastFGMask);
 		resLastFGMask.copyTo(resCurrFGMask);
 		resT_1FGMask.copyTo(resT_2FGMask);

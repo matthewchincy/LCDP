@@ -17,6 +17,9 @@ bool saveResultSwitch;
 // Evaluate result switch
 bool evaluateResultSwitch;
 
+// Program process took time
+double firstTotalDiffSeconds;
+
 ///Read input Functions///
 // Read integer value input
 std::vector<int> readVectorIntInput(std::string question) {

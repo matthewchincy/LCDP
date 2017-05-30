@@ -832,7 +832,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 
 		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 3);
 		cv::bitwise_not(gradientResult, gradientResult);
-
+		cv::bitwise_and(grad, gradientResult, gradientResult);
+		cv::dilate(gradientResult, gradientResult, cv::Mat(), cv::Point(-1, -1), 1);
 		cv::inRange(grad, cv::Scalar(75), cv::Scalar(150), gradientResult2);
 		cv::dilate(gradientResult2, gradientResult2, cv::Mat(), cv::Point(-1, -1), 4);
 		//inputGrayImg.copyTo(gradientResult);
@@ -889,8 +890,8 @@ void BackgroundSubtractorLCDP::Process(const cv::Mat inputImg, cv::Mat &outputIm
 		cv::bitwise_not(resLastFGMaskDilated, resLastFGMaskDilatedInverted);
 		cv::bitwise_and(resBlinkFrame, resLastFGMaskDilatedInverted, resBlinkFrame);
 		cv::medianBlur(resLastFGMask, resLastFGMask, postMedianFilterSize);
-		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_OPEN, element);
-		//cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
+		cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_OPEN, element);
+		cv::morphologyEx(resLastFGMask, resLastFGMask, cv::MORPH_CLOSE, element);
 		resLastFGMask = ContourFill(resLastFGMask);
 		resLastFGMask.copyTo(resCurrFGMask);
 		resT_1FGMask.copyTo(resT_2FGMask);
@@ -1264,12 +1265,17 @@ void BackgroundSubtractorLCDP::RGBDarkPixel(DescriptorStruct &bgWord, Descriptor
 		currGValue = double(currWord.rgb[1] / totalCurrIntensityValue);
 		RDiff = std::abs(bgRValue - currRValue);
 		GDiff = std::abs(bgGValue - currGValue);
-		if ((RDiff <= darkRDiffRatioMax) && (GDiff <= darkGDiffRatioMax)) {
-			if ((RDiff >= darkRDiffRatioMin) && (GDiff >= darkGDiffRatioMin)) {
-				//if ((RDiff < 0.15) && (GDiff < 0.1)) {
-				result = false;
-			}
+		if (((RDiff <= darkRDiffRatioMax) && (GDiff <= darkGDiffRatioMax))&&((RDiff >= darkRDiffRatioMin) && (GDiff >= darkGDiffRatioMin))) {
+			//if((RDiff < 0.15) && (GDiff < 0.1)) {
+			result = false;
 		}
+		//else if ((IntensityRatio < 0.675507f) && (IntensityRatio > 0.430716f)) {
+		//	if (((RDiff <= 0.023803f) && (GDiff <= 0.013378f)) && ((RDiff >= 0.000554f) && (GDiff >= -0.002061f))) {
+		//		//if((RDiff < 0.15) && (GDiff < 0.1)) {
+		//		//if((RDiff < 0.15) && (GDiff < 0.1)) {
+		//		result = false;
+		//	}
+		//}
 	}
 }
 // Dark Pixel generator (RETURN-255: Not dark pixel, 0: dark pixel)

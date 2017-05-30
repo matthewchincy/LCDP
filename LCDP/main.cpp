@@ -12,7 +12,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.5";
+	programVersion = "RL V1.5 ALL Test 3.5 FINAL";
 
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -117,7 +117,7 @@ int main() {
 	// RGB detection switch
 	bool clsRGBDiffSwitch = true;
 	// RGB differences threshold
-	double clsRGBThreshold = 10;
+	double clsRGBThreshold = 35;
 	// Up RGB differences threshold
 	double clsUpRGBThreshold = 30;
 	// LCDP detection switch
@@ -172,10 +172,13 @@ int main() {
 	// R-channel different ratio
 	//float darkRDiffRatio = 0.15;
 	float darkRDiffRatioMin = 0.04097f;
+	//float darkRDiffRatioMin = 0.0f;
 	float darkRDiffRatioMax = 0.08477f;
 	// G-channel different ratio
 	//float darkGDiffRatio = 0.1;
 	float darkGDiffRatioMin = -0.0002f;
+	//float darkGDiffRatioMin = 0.0f;
+
 	float darkGDiffRatioMax = 0.02774f;
 
 

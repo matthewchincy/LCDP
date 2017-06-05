@@ -12,7 +12,7 @@
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.5 FINAL";
+	programVersion = "RL V1.5 ALL Test 3.5 FINAL ViBe Update";
 
 	std::cout << "Program Version: " << programVersion << std::endl;
 
@@ -28,7 +28,7 @@ int main() {
 	// Test dataset name
 	std::vector<int> datasetInput;
 	std::cout << "Dataset list:" << std::endl;
-	for (size_t datasetIndex = 0; datasetIndex < 14; datasetIndex++) {
+	for (size_t datasetIndex = 0; datasetIndex < 17; datasetIndex++) {
 		// Video file name
 		switch (datasetIndex) {
 		case 0: filename = "bungalows";
@@ -58,6 +58,12 @@ int main() {
 		case 12:filename = "wetSnow";
 			break;
 		case 13:filename = "snowFall";
+			break;
+		case 14:filename = "traffic";
+			break;
+		case 15:filename = "sidewalk";
+			break;			
+		case 16:filename = "boulevard";
 			break;
 		default:
 			std::cout << "Error occurs!";
@@ -117,7 +123,7 @@ int main() {
 	// RGB detection switch
 	bool clsRGBDiffSwitch = true;
 	// RGB differences threshold
-	double clsRGBThreshold = 35;
+	double clsRGBThreshold = 10;
 	// Up RGB differences threshold
 	double clsUpRGBThreshold = 30;
 	// LCDP detection switch
@@ -130,7 +136,7 @@ int main() {
 	// Maximum number of LCDP differences threshold
 	double clsLCDPMaxThreshold = 0.7;
 	// neighborhood matching switch
-	bool clsNbMatchSwitch = true;
+	bool clsNbMatchSwitch = false;
 	// Matching threshold
 	int clsMatchingThreshold = 2;
 
@@ -227,6 +233,12 @@ int main() {
 		case 12:filename = "wetSnow";
 			break;
 		case 13:filename = "snowFall";
+			break; 
+		case 14:filename = "traffic";
+			break;
+		case 15:filename = "sidewalk";
+			break;
+		case 16:filename = "boulevard";
 			break;
 		default:
 			std::cout << "Error occurs!";

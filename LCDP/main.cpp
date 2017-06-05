@@ -136,13 +136,13 @@ int main() {
 	// Maximum number of LCDP differences threshold
 	double clsLCDPMaxThreshold = 0.7;
 	// neighborhood matching switch
-	bool clsNbMatchSwitch = false;
+	bool clsNbMatchSwitch = true;
 	// Matching threshold
 	int clsMatchingThreshold = 2;
 
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
-	bool upRandomReplaceSwitch = false;
+	bool upRandomReplaceSwitch = true;
 	// Random update neighborhood model switch
 	bool upRandomUpdateNbSwitch = false;
 	// Feedback loop switch

@@ -4,6 +4,7 @@
 #define __BackgroundSubtractorLCDP_H_INCLUDED
 #include <opencv2\opencv.hpp>
 #include <vector>
+#include <bitset>
 
 class BackgroundSubtractorLCDP {
 public:
@@ -11,7 +12,7 @@ public:
 	BackgroundSubtractorLCDP(size_t inputWordsNo, bool inputPreSwitch,
 		double inputDescColourDiffRatio, bool inputClsRGBDiffSwitch, double inputClsRGBThreshold, bool inputClsLCDPDiffSwitch,
 		double inputClsLCDPThreshold, double inputClsUpLCDPThreshold, double inputClsLCDPMaxThreshold, int inputClsMatchThreshold,
-		bool inputClsNbMatchSwitch, cv::Mat inputROI, cv::Size inputFrameSize, bool inputUpRandomReplaceSwitch, bool inputUpRandomUpdateNbSwitch,
+		bool inputClsNbMatchSwitch, cv::Mat inputROI, cv::Size inputFrameSize,int inputFrameNo, bool inputUpRandomReplaceSwitch, bool inputUpRandomUpdateNbSwitch,
 		bool inputUpFeedbackSwitch, float inputUpDynamicRateIncrease, float inputUpDynamicRateDecrease, float inputUpMinDynamicRate, float inputUpUpdateRateIncrease,
 		float inputUpUpdateRateDecrease, float inputUpUpdateRateLowest, float inputUpUpdateRateHighest,
 		float inputDarkMinIntensityRatio, float inputDarkMaxIntensityRatio, float inputDarkRDiffRatioMin, float inputDarkRDiffRatioMax,
@@ -24,10 +25,10 @@ public:
 	std::string folderName;
 
 	/*******INITIALIZATION*******/
-	void Initialize(const cv::Mat inputImg, const cv::Mat inputROI);
+	void Initialize(cv::Mat inputImg, cv::Mat inputROI);
 
 	// Program processing
-	void Process(const cv::Mat inputImg, cv::Mat &outputImg);
+	void Process(cv::Mat inputImg, cv::Mat &outputImg);
 
 	/*=====OTHERS Methods=====*/
 	// Save parameters
@@ -46,8 +47,9 @@ protected:
 		// Store the frame index of the last occurrences of this descriptor
 		int q;
 		// Store the pixel's LCDP values
-		int LCDP[16];
-
+		//int LCDP[16];
+		std::bitset<96> LCDPColour[2];
+		std::bitset<48> LCDPTexture[2];
 		int lastF;
 		float gray;
 		int nowF;
@@ -76,6 +78,22 @@ protected:
 	/*=====LOOK-UP TABLE=====*/
 	// neighborhood's offset value
 	const cv::Point nbOffset[48] = {
+		/*cv::Point(0, -1),	cv::Point(1, 0),	cv::Point(0, 1),	cv::Point(-1, 0),
+		cv::Point(-1, -1),  cv::Point(1, -1),	cv::Point(1, 1),	cv::Point(-1, 1),
+
+		cv::Point(0, -2),   cv::Point(2, 0),    cv::Point(0, 2),    cv::Point(-2, 0),
+		cv::Point(-2, -2),  cv::Point(2, -2),	cv::Point(2, 2),    cv::Point(-2, 2),
+
+		cv::Point(-1, -3),	cv::Point(1, -3),	cv::Point(1, 3),	cv::Point(-1, 3),
+		cv::Point(-3, -1),  cv::Point(3, -1),	cv::Point(3, 1),	cv::Point(-3, 1),
+		cv::Point(-3, -3),  cv::Point(3, -3),   cv::Point(3, 3),	cv::Point(-3, 3),
+
+
+		cv::Point(-2, 1),	cv::Point(2, 1),  	cv::Point(-1, 2),   cv::Point(1, 2),
+		cv::Point(0, -3),	cv::Point(3, 0),	cv::Point(0, 3),	cv::Point(-3, 0),				  
+		cv::Point(-2, -3),  cv::Point(2, -3),	cv::Point(2, 3),	cv::Point(-2, 3),
+		cv::Point(-3, -2),  cv::Point(3, -2),	cv::Point(3, 2),	cv::Point(-3, 2),		
+		cv::Point(-1, -2),  cv::Point(1, -2),	cv::Point(-2, -1),  cv::Point(2, -1)*/
 		cv::Point(0, -1),	cv::Point(1, 0),	cv::Point(0, 1),	cv::Point(-1, 0),
 		cv::Point(-1, -1),  cv::Point(1, -1),	cv::Point(1, 1),	cv::Point(-1, 1),
 		cv::Point(-2, -2), cv::Point(0, -2), cv::Point(2, -2),
@@ -93,12 +111,13 @@ protected:
 		cv::Point(-3, -1),  cv::Point(3, -1),
 		cv::Point(-3, 2),  cv::Point(3, 2),
 		cv::Point(-3, 1),  cv::Point(3, 1),
-		cv::Point(-2, 3),  cv::Point(-1, 3),cv::Point(1, 3),cv::Point(2, 3)
+		cv::Point(-2, 3),  cv::Point(-1, 3),cv::Point(1, 3),cv::Point(2, 3)	
+				  
 	};
 	// Internal pixel info LUT for all possible pixel indexes
 	PxInfo * pxInfoLUTPtr;
 	// LCD differences 
-	float * LCDDiffLUTPtr;
+	float LCDDiffLUTPtr[97][49];
 
 	/*=====MODEL Parameters=====*/
 	// Store the background's words and it's iterator
@@ -167,6 +186,8 @@ protected:
 	const cv::Mat frameRoi;
 	// Size of input frame
 	const cv::Size frameSize;
+	// Total number of input frame
+	const int frameNo;
 	// Size of input frame starting from 0
 	const cv::Size frameSizeZero;
 	// Total number of pixel of region of interest
@@ -268,16 +289,16 @@ protected:
 	/*=====METHODS=====*/
 	/*=====DEFAULT methods=====*/
 	// Refreshes all samples based on the last analyzed frame - checked
-	void RefreshModel(const float refreshFraction);
+	void RefreshModel(float refreshFraction);
 
 	/*=====DESCRIPTOR Methods=====*/
 	// DescriptorStruct Generator-Generate pixels' descriptor (RGB+LCDP) - checked
-	void DescriptorGenerator(const cv::Mat inputFrame, const PxInfo &pxInfoPtr, DescriptorStruct &wordPtr);
+	void DescriptorGenerator(cv::Mat inputFrame, PxInfo &pxInfoPtr, DescriptorStruct &wordPtr);
 	// Generate LCD Descriptor - checked
-	void LCDGenerator(const cv::Mat inputFrame, const PxInfo &pxInfoPtr, DescriptorStruct &wordPtr);
+	void LCDGenerator(cv::Mat inputFrame, PxInfo &pxInfoPtr, DescriptorStruct &wordPtr);
 	// Calculate word persistence value
-	void GetLocalWordPersistence(DescriptorStruct &wordPtr, const size_t &currFrameIndex,
-		const size_t offsetValue, float &persistenceValue);
+	void GetLocalWordPersistence(DescriptorStruct &wordPtr, size_t &currFrameIndex,
+		size_t offsetValue, float &persistenceValue);
 
 	/*=====LUT Methods=====*/
 	// Generate neighborhood pixel offset value - checked
@@ -288,27 +309,27 @@ protected:
 	/*=====MATCHING Methods=====*/
 	// Descriptor matching (RETURN: LCDPResult-1:Not match, 0: Match)
 	void BackgroundSubtractorLCDP::DescriptorMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord
-		, const size_t &descNeighNo, const double LCDPThreshold, const double upLCDPThreshold, const double RGBThreshold,
+		,  size_t &descNeighNo,  double LCDPThreshold,  double upLCDPThreshold,  double RGBThreshold,
 		float &LCDPDistance, float &RGBDistance, bool &matchResult, bool &matchResultBoth);
 	
 	// LCD Matching (RETURN-1:Not match, 0: Match)
 	void LCDPMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord,
-		const size_t &descNeighNo, const double &LCDPThreshold, float &minDistance, bool &matchResult);
+		 size_t &descNeighNo,  double &LCDPThreshold, float &minDistance, bool &matchResult);
 	// RGB Matching (RETURN-1:Not match, 0: Match)
 	void RGBMatching(DescriptorStruct &bgWord, DescriptorStruct &currWord,
-		const double &RGBThreshold, float &minDistance, bool &matchResult);
+		double &RGBThreshold, float &minDistance, bool &matchResult);
 	// RGB Dark Pixel (RETURN-1:Not Dark Pixel, 0: Dark Pixel) Checked May 14
 	void BackgroundSubtractorLCDP::RGBDarkPixel(DescriptorStruct &bgWord, DescriptorStruct &currWord, bool &result);
 	// Dark Pixel generator (RETURN-1: Not dark pixel, 0: dark pixel)
-	void DarkPixelGenerator(const cv::Mat &inputGrayImg, const cv::Mat &inputRGBImg,
-		const cv::Mat &lastGrayImg, const cv::Mat &lastRGBImg, cv::Mat &darkPixel);
+	void DarkPixelGenerator(cv::Mat &inputGrayImg, cv::Mat &inputRGBImg,
+		 cv::Mat &lastGrayImg, cv::Mat &lastRGBImg, cv::Mat &darkPixel);
 
 	/*=====POST-PROCESSING Methods=====*/
 	// Compensation with Motion History - checked
-	cv::Mat CompensationMotionHist(const cv::Mat T_1FGMask, const cv::Mat T_2FGMask, const cv::Mat currFGMask, const float postCompensationThreshold);
+	cv::Mat CompensationMotionHist(cv::Mat T_1FGMask, cv::Mat T_2FGMask, cv::Mat currFGMask, float postCompensationThreshold);
 	// Contour filling the empty holes - checked
-	cv::Mat ContourFill(const cv::Mat inputImg);
-	cv::Mat BorderLineReconst(const cv::Mat inputMask);
+	cv::Mat ContourFill(cv::Mat inputImg);
+	cv::Mat BorderLineReconst(cv::Mat inputMask);
 
 	/*=====DEBUG=====*/
 	cv::Point debPxLocation;

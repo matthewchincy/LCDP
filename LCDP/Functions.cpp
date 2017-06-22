@@ -281,9 +281,6 @@ void SaveParameter(std::string versionFolderName, std::string saveFolderName) {
 	myfile << saveFolderName;
 	myfile << "\n";
 	myfile.close();
-	myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
-	myfile << programVersion << "," << saveFolderName;
-	myfile.close();
 }
 // Evaluate results
 void EvaluateResult(std::string filename, std::string saveFolderName, std::string versionFolderName) {
@@ -370,24 +367,21 @@ void EvaluateResult(std::string filename, std::string saveFolderName, std::strin
 		myfile << "FALSE POSITIVE(FP): " << std::setprecision(0) << std::fixed << FP << std::endl;
 		myfile << "TRUE NEGATIVE(TN): " << std::setprecision(0) << std::fixed << TN << std::endl;
 		myfile << "FALSE NEGATIVE(FN): " << std::setprecision(0) << std::fixed << FN << std::endl;
+		myfile << "TOTAL SHADOW: " << std::setprecision(0) << std::fixed << TotalShadow << std::endl;
 		myfile << "SHADOW ERROR(SE): " << std::setprecision(0) << std::fixed << SE << std::endl;
-		myfile << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
-		myfile << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
-		myfile << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
+		myfile << "SHADOW ERROR(RATIO): " << std::setprecision(3) << std::fixed << (SE/TotalShadow) << std::endl;
+		myfile << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;		
 		myfile << "SPECIFICITY: " << std::setprecision(3) << std::fixed << specficity << std::endl;
 		myfile << "FPR: " << std::setprecision(3) << std::fixed << FPR << std::endl;
 		myfile << "FNR: " << std::setprecision(3) << std::fixed << FNR << std::endl;
 		myfile << "PBC: " << std::setprecision(3) << std::fixed << PBC << std::endl;
-		myfile << "TOTAL SHADOW: " << std::setprecision(0) << std::fixed << TotalShadow << std::endl;
+		myfile << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
+		myfile << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;		
 		myfile.close();
 		std::cout << "\n<<<<<-STATISTICS  RESULTS->>>>>\n";
 		std::cout << "RECALL: " << std::setprecision(3) << std::fixed << recall << std::endl;
 		std::cout << "PRECISION: " << std::setprecision(3) << std::fixed << precision << std::endl;
-		std::cout << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;
-
-		myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
-		myfile << "," << std::setprecision(3) << std::fixed << recall << "," << std::setprecision(3) << std::fixed << precision << "," << std::setprecision(3) << std::fixed << FMeasure << "\n";
-		myfile.close();
+		std::cout << "F-MEASURE: " << std::setprecision(3) << std::fixed << FMeasure << std::endl;			
 	}
 	else {
 		std::cout << "Skipping evaluation process!" << std::endl;
@@ -395,8 +389,6 @@ void EvaluateResult(std::string filename, std::string saveFolderName, std::strin
 }
 // Calculate processing time
 void GenerateProcessTime(double FRAME_COUNT, std::string saveFolderName) {
-
-	//double diffSeconds = difftime(tempFinishTime, tempStartTime);
 	double diffSeconds = firstTotalDiffSeconds;
 	int seconds, hours, minutes;
 	minutes = diffSeconds / 60;

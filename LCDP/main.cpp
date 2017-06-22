@@ -9,13 +9,11 @@
 #include <conio.h>
 #include <windows.h>
 #include <vector>
+#include <bitset>
 
 int main() {
 	// Program version
-	programVersion = "RL V1.5 ALL Test 3.5 FINAL ViBe Update";
-
-	std::cout << "Program Version: " << programVersion << std::endl;
-
+	programVersion = "PROPOSED METHOD FINAL";
 	/// Frame Parameters
 	// Frames per second (FPS) of the input video
 	double FPS;
@@ -25,58 +23,27 @@ int main() {
 	cv::Size FRAME_SIZE;
 	// Video file name
 	std::string filename;
+	// List of video file name
+	std::vector<std::string> filenames = {
+		"badminton","boulevard","bungalows",
+		"canoe","copyMachine","cubicle",
+		"fall","fountain02","PETS2006",
+		"sidewalk","sofa","wetSnow"
+	};
 	// Test dataset name
 	std::vector<int> datasetInput;
+	int datasetIndex = 0;
 	std::cout << "Dataset list:" << std::endl;
-	for (size_t datasetIndex = 0; datasetIndex < 17; datasetIndex++) {
-		// Video file name
-		switch (datasetIndex) {
-		case 0: filename = "bungalows";
-			break;
-		case 1: filename = "cubicle";
-			break;
-		case 2: filename = "canoe";
-			break;
-		case 3: filename = "fountain02";
-			break;
-		case 4: filename = "sofa";
-			break;
-		case 5: filename = "highway";
-			break;
-		case 6: filename = "office";
-			break;
-		case 7: filename = "badminton";
-			break;
-		case 8: filename = "tunnelExit_0_35fps";
-			break;
-		case 9: filename = "PETS2006";
-			break;
-		case 10: filename = "fall";
-			break;
-		case 11:filename = "copyMachine";
-			break;
-		case 12:filename = "wetSnow";
-			break;
-		case 13:filename = "snowFall";
-			break;
-		case 14:filename = "traffic";
-			break;
-		case 15:filename = "sidewalk";
-			break;			
-		case 16:filename = "boulevard";
-			break;
-		default:
-			std::cout << "Error occurs!";
-			break;
-		}
-		std::cout << datasetIndex << ": " << filename << std::endl;
+	for (auto & fName: filenames) {
+		std::cout << datasetIndex++ << ": " << fName << std::endl;
 	}
 	// Test database name
 	datasetInput = readVectorIntInput("Please input dataset id (-1:Done;999:All)");
 	if (datasetInput.at(0) == 999) {
+		datasetIndex = 0;
 		std::vector<int>().swap(datasetInput);
-		for (size_t datasetIndex = 0; datasetIndex < 14; datasetIndex++) {
-			datasetInput.push_back(datasetIndex);
+		for (auto & fName : filenames) {
+			datasetInput.push_back(datasetIndex++);
 		}
 	}
 	// Show input frame switch	
@@ -110,7 +77,6 @@ int main() {
 	// Program start time
 	std::string startTime;
 
-
 	/****Define Threshold****/
 	/*=====PRE PROCESS Parameters=====*/
 	bool PreSwitch = true;
@@ -124,8 +90,8 @@ int main() {
 	bool clsRGBDiffSwitch = true;
 	// RGB differences threshold
 	double clsRGBThreshold = 10;
-	// Up RGB differences threshold
-	double clsUpRGBThreshold = 30;
+	//// Up RGB differences threshold
+	//double clsUpRGBThreshold = 30;
 	// LCDP detection switch
 	bool clsLCDPDiffSwitch = true;
 	// LCDP differences threshold (0-1)
@@ -142,7 +108,7 @@ int main() {
 
 	/*=====UPDATE Parameters=====*/
 	// Random replace model switch
-	bool upRandomReplaceSwitch = true;
+	bool upRandomReplaceSwitch = false;
 	// Random update neighborhood model switch
 	bool upRandomUpdateNbSwitch = false;
 	// Feedback loop switch
@@ -184,7 +150,6 @@ int main() {
 	//float darkGDiffRatio = 0.1;
 	float darkGDiffRatioMin = -0.0002f;
 	//float darkGDiffRatioMin = 0.0f;
-
 	float darkGDiffRatioMax = 0.02774f;
 
 
@@ -195,55 +160,23 @@ int main() {
 	std::string saveFolderName;
 	std::string resultFolderName;
 	std::string imageSaveFolder;
+	if (!clsLCDPDiffSwitch) {
+		programVersion = programVersion + " NO LCDP";
+	}
+	std::cout << "Program Version: " << programVersion << std::endl;
+
 	bool success;
 	const char *s2;
 	int datasetNo;
 	char s[25];
 	std::ofstream myfile;
 	//for (size_t datasetIndex = 7; datasetIndex < 8; datasetIndex++) {
-	for (std::vector<int>::iterator datasetIndex = datasetInput.begin(); datasetIndex != datasetInput.end(); ++datasetIndex) {
-		success = false;
-		//datasetNo = *datasetIndex;
+	//for (std::vector<int>::iterator datasetIndex = datasetInput.begin(); datasetIndex != datasetInput.end(); ++datasetIndex) {
+	for (auto & datasetIndex : datasetInput) {
+		success = false;		
+
 		// Video file name
-		switch (*datasetIndex) {
-		case 0: filename = "bungalows";
-			break;
-		case 1: filename = "cubicle";
-			break;
-		case 2: filename = "canoe";
-			break;
-		case 3: filename = "fountain02";
-			break;
-		case 4: filename = "sofa";
-			break;
-		case 5: filename = "highway";
-			break;
-		case 6: filename = "office";
-			break;
-		case 7: filename = "badminton";
-			break;
-		case 8: filename = "tunnelExit_0_35fps";
-			break;
-		case 9: filename = "PETS2006";
-			break;
-		case 10: filename = "fall";
-			break;
-		case 11:filename = "copyMachine";
-			break;
-		case 12:filename = "wetSnow";
-			break;
-		case 13:filename = "snowFall";
-			break; 
-		case 14:filename = "traffic";
-			break;
-		case 15:filename = "sidewalk";
-			break;
-		case 16:filename = "boulevard";
-			break;
-		default:
-			std::cout << "Error occurs!";
-			break;
-		}
+		filename = filenames.at(datasetIndex);		
 		// Read video input from user
 		//cv::VideoCapture videoCapture = readVideoInput("Video folder", &filename, &FPS, &FRAME_COUNT, &FRAME_SIZE);
 		videoCapture = readVideoInput2(&filename, &FPS, &FRAME_COUNT, &FRAME_SIZE, &success);
@@ -252,14 +185,6 @@ int main() {
 			versionFolderName = filename + "/" + programVersion;
 			s2 = versionFolderName.c_str();
 			_mkdir(s2);
-
-			myfile.open(versionFolderName + "/parameter.csv", std::ios::app);
-			myfile << "Program Version,Results Folder, Width, Height, Desc Diff. No,";
-			myfile << "Desc NB,Desc Ratio, Offset, RGB Detect,LCD Detect, LCDP Threshold,Up LCDP Threshold, Max LCDP Threshold,";
-			myfile << "Initial Persistence Threshold,Matching Threshold,Ratio Method, NB Match,Random Replace Switch, Random Update Switch,";
-			myfile << "Feedback Switch,V Inc, V Desc,V Min, T Inc, T Desc,T Min, T Max, Words, Recall, Precision, FMeasure\n";
-			myfile.close();
-
 			ROI_FRAME.create(FRAME_SIZE, CV_8UC1);
 			ROI_FRAME = cv::Scalar_<uchar>(255);
 
@@ -273,13 +198,13 @@ int main() {
 			startTime = currentDateTimeStamp(&tempStartTime);
 
 			// Current process result folder name
-			saveFolderName = versionFolderName + "/" + programVersion + "-" + startTime;
+			saveFolderName = versionFolderName + "/" + filename + "-" + programVersion + "-" + startTime;
 
 			// Declare background subtractor constructor
 			BackgroundSubtractorLCDP backgroundSubtractorLCDP(Words_No, PreSwitch,
 				descColourDiffRatio, clsRGBDiffSwitch, clsRGBThreshold, clsLCDPDiffSwitch,
 				clsLCDPThreshold, clsUpLCDPThreshold, clsLCDPMaxThreshold, clsMatchingThreshold,
-				clsNbMatchSwitch, ROI_FRAME, FRAME_SIZE, upRandomReplaceSwitch, upRandomUpdateNbSwitch,
+				clsNbMatchSwitch, ROI_FRAME, FRAME_SIZE, FRAME_COUNT, upRandomReplaceSwitch, upRandomUpdateNbSwitch,
 				upFeedbackSwitch, upDynamicRateIncrease, upDynamicRateDecrease, upMinDynamicRate, upUpdateRateIncrease,
 				upUpdateRateDecrease, upUpdateRateLowest, upUpdateRateHighest,
 				darkMinIntensityRatio, darkMaxIntensityRatio, darkRDiffRatioMin, darkRDiffRatioMax, darkGDiffRatioMin, darkGDiffRatioMax,
@@ -294,22 +219,9 @@ int main() {
 				SaveParameter(versionFolderName, saveFolderName);
 				backgroundSubtractorLCDP.folderName = saveFolderName;
 				backgroundSubtractorLCDP.SaveParameter(versionFolderName, saveFolderName);
-				/*resultFolderName = saveFolderName + "/v";
-				s2 = resultFolderName.c_str();
-				_mkdir(s2);
-				resultFolderName = saveFolderName + "/d";
-				s2 = resultFolderName.c_str();
-				_mkdir(s2);
-				resultFolderName = saveFolderName + "/r";
-				s2 = resultFolderName.c_str();
-				_mkdir(s2);
-				resultFolderName = saveFolderName + "/u";
-				s2 = resultFolderName.c_str();
-				_mkdir(s2);*/
 				resultFolderName = saveFolderName + "/results";
 				s2 = resultFolderName.c_str();
 				_mkdir(s2);
-
 			}
 			// Program start time
 			time_t firstStartTime = time(0);
@@ -321,7 +233,6 @@ int main() {
 				backgroundSubtractorLCDP.Process(inputFrame, fgMask);
 				firstEndTime = time(0);
 				firstTotalDiffSeconds += difftime(firstEndTime, firstStartTime);
-				tempStartTime = time(0);
 				if (showInputSwitch) {
 					cv::imshow("Input Video", inputFrame);
 				}
